@@ -1,0 +1,9 @@
+new staff registration 
+- photo
+- name
+- id (auto-generate)
+- position
+- department
+- staff description (experiences)
+- email
+- contact no.
