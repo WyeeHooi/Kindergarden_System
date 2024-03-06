@@ -8,6 +8,9 @@ from PIL import Image, ImageTk
 import os
 
 font='Lato'
+
+subjects=["Bahasa Melayu","English","Mathematics","Science","Living Skills","Physical Education","Art","Music"]
+
 user_info={}
 
 ### database conn ##
@@ -248,6 +251,7 @@ action_style.configure('actionBtn.TButton', padding=5,
 action_style.configure('edit.TLabel', font=(font, 12,'bold'), foreground='black',background='#F0E5F0')
 action_style.configure('edit.TEntry', font=(font, 12),padding=(5, 5, 5, 5))
 action_style.configure('edit.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20),background='#F0E5F0')
+action_style.configure('general.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20),background='white')
 
 window.bind('<Configure>', on_window_configure)
 
@@ -281,31 +285,53 @@ Frame_buttonNav.grid_columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
 
 
 ### FRAME 1
-Frame_profile = tk.Frame(window, bd=5, relief=tk.FLAT, bg="purple")
+Frame_profile = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_profile)
 display_userPic(Frame_profile, 180, 180, 'hooi yee')
 Editprofile_button = ttk.Button(Frame_profile, text="Edit Profile", command=lambda: edit_profile('hooi yee'), style='actionBtn.TButton',width=15)
 Editprofile_button.grid(row=1, column=0, padx=5,pady=5)
-profile_lblframe=ttk.LabelFrame(Frame_profile, text='PROFILE',style='edit.TLabelframe')
+profile_lblframe = ttk.LabelFrame(Frame_profile, text='PROFILE' ,style='general.TLabelframe')
 profile_lblframe.grid(row=0, column=1, padx=5,sticky="nsew")
 Frame_profile.columnconfigure(1, weight=1)
-
+empty_lblframe=tk.Label(profile_lblframe,padx=30,bg='white')
+empty_lblframe.grid(row=0, column=2, padx=5,sticky="nsew")
 row = 0
 fetch_user('hooi yee')
 for field, value in user_info.items():
+    value=str(value)
     if field=='profile_pic':
         pass
     else:
-        ttk.Label(profile_lblframe, text=field.capitalize() + ":\t" + str(value), style='edit.TLabel').grid(row=row, column=1, padx=10,
-                                                                                    pady=5, sticky="w")
+        if row<=6:
+            ttk.Label(profile_lblframe, text=field.capitalize() + ":", style='edit.TLabel',background='white').grid(row=row, column=0,
+                                                                                                 padx=10,
+                                                                                                 pady=5, sticky="w")
+            ttk.Label(profile_lblframe, text=value, style='edit.TLabel',font=('normal'),background='white').grid(row=row, column=1, padx=10,
+                                                                              pady=5, sticky="w")
+        else:
+            ttk.Label(profile_lblframe, text=field.capitalize() + ":", style='edit.TLabel',background='white').grid(row=row-7, column=3,
+                                                                                                 padx=10,
+                                                                                                 pady=5, sticky="w")
+            ttk.Label(profile_lblframe, text=value, style='edit.TLabel',font=('normal'),background='white').grid(row=row-7, column=4, padx=10,
+                                                                              pady=5, sticky="w")
+
     row += 1
 
 
 
-
 # FRAME 2
-Frame_attendance = tk.Frame(window, bd=5, relief=tk.FLAT, bg="blue")
+Frame_attendance = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_attendance)
+class_lbl=ttk.Label(Frame_attendance,text='Class : ',style='edit.TLabel',background='white',padding=(40,40)).grid(row=0,column=0,sticky="e")
+class_sel=ttk.Combobox(Frame_attendance,values=subjects,font=(font,'12')).grid(row=0,column=1,sticky="w",padx=20,pady=20)
+Frame_attendance.columnconfigure(1, weight=1)
+
+tree = ttk.Treeview(Frame_attendance, columns=("Name", "Roll Number", "Grade"), show="headings")
+tree.heading("Name", text="Name")
+tree.heading("Roll Number", text="Roll Number")
+tree.heading("Grade", text="Grade")
+tree.grid(row=1, columnspan=2, padx=20, pady=20,sticky="nsew")
+
 # FRAME 3
 Frame_assessment = tk.Frame(window, bd=5, relief=tk.FLAT, bg="red")
 action_frame.append(Frame_assessment)
