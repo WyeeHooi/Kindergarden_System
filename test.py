@@ -1,46 +1,62 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox
 
-class HTMLCheckbox(tk.Canvas):
-    def __init__(self, master=None, **kwargs):
-        super().__init__(master, **kwargs)
-        self.checked = False
-        self.width = 20
-        self.height = 20
-        self.bind("<Button-1>", self.toggle_checked)
-        self.draw_checkbox()
+from datetime import datetime
+import pymysql
+# Database connection
+connection = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='',
+        database='tintots_kindergarden'
+    )
 
-    def toggle_checked(self, event):
-        self.checked = not self.checked
-        self.draw_checkbox()
+cursor=connection.cursor()
 
-    def draw_checkbox(self):
-        self.delete("checkbox")
-        if self.checked:
-            self.create_rectangle(0, 0, self.width, self.height, fill="lightgreen", outline="black", tags="checkbox")
-            self.create_line(2, 2, self.width - 2, self.height - 2, fill="black", width=2, tags="checkbox")
-            self.create_line(self.width - 2, 2, 2, self.height - 2, fill="black", width=2, tags="checkbox")
-        else:
-            self.create_rectangle(0, 0, self.width, self.height, fill="white", outline="black", tags="checkbox")
+# Dummy student data (assuming subj_student is a dictionary)
+subj_student = {1001: "John", 1002: "Alice", 1003: "Bob"}
 
-def insert_checkbox(tree, item, column):
-    checkbox = HTMLCheckbox(tree, width=20, height=20)
-    tree.column(item, column=column, window=checkbox)
-
-# Example usage:
+# Create the main window
 root = tk.Tk()
+root.title("Attendance Taking")
 
-tree = ttk.Treeview(root, columns=("No.", "Student ID", "Student Name", "Attendance"), show="headings")
-tree.grid(row=1, columnspan=4, padx=20, pady=20, sticky="nsew")
-tree.heading("No.", text="No.")
-tree.heading("Student ID", text="Student ID")
-tree.heading("Student Name", text="Student Name")
-tree.heading("Attendance", text="Attendance")
+# Create labels for the column headers
+tk.Label(root, text="No.").grid(row=0, column=0)
+tk.Label(root, text="Student ID").grid(row=0, column=1)
+tk.Label(root, text="Student Name").grid(row=0, column=2)
+tk.Label(root, text="Attendance").grid(row=0, column=3)
 
-item1 = tree.insert("", "end", values=("1", "1001", "John"))
-item2 = tree.insert("", "end", values=("2", "1002", "Alice"))
+# Store attendance data
+attendance_data = {}
 
-insert_checkbox(tree, item1, column=3)
-insert_checkbox(tree, item2, column=3)
+# Create a checkbox for each student
+for i, (student_id, student_name) in enumerate(subj_student.items(), start=1):
+    tk.Label(root, text=str(i)).grid(row=i, column=0)
+    tk.Label(root, text=str(student_id)).grid(row=i, column=1)
+    tk.Label(root, text=str(student_name)).grid(row=i, column=2)
+    var = tk.BooleanVar()
+    checkbox = tk.Checkbutton(root, variable=var)
+    checkbox.grid(row=i, column=3)
+    attendance_data[student_id] = var
 
+# Function to submit attendance
+def submit_attendance():
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    try:
+        for student_id, var in attendance_data.items():
+            student_name = subj_student[student_id]  # Retrieve student name from subj_student dictionary
+            attendance = 1 if var.get() else 0
+            sql = "INSERT INTO attendance_record (subject, stud_id, student, time_recorded, attendance) VALUES (%s, %s, %s, %s, %s)"
+            cursor.execute(sql, ("math", student_id, student_name, current_time, attendance))
+        connection.commit()  # Commit changes to the database
+        messagebox.showinfo("Success", "Attendance recorded successfully!")
+    except Exception as e:
+        messagebox.showerror("Error", f"Database error: {str(e)}")
+
+
+# Create submit button
+submit_button = tk.Button(root, text="Submit", command=submit_attendance)
+submit_button.grid(row=len(subj_student) + 1, columnspan=4)
+
+# Run the application
 root.mainloop()

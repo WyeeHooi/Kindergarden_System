@@ -3,8 +3,8 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 import pymysql
-from tkinter import PhotoImage
 from PIL import Image, ImageTk
+from datetime import datetime
 import os
 
 font='Lato'
@@ -68,6 +68,10 @@ def report_clicked():
     show_frame(Frame_report)
     set_active_button(report_button)
 
+def destroy_all_widgets(frame):
+    for widget in frame.winfo_children():
+        widget.destroy()
+
 # Function to display the image in the frame
 def display_userPic(frame, width, height, user):
     try:
@@ -98,73 +102,85 @@ def display_userPic(frame, width, height, user):
     label.grid(row=0, column=0, padx=15,pady=15)
 
 
-# def record_attendance():
-#     if selected_subject:
-#         attendance_records = []
-#         for student_id, student_name in subj_student.items():
-#             attendance_value = students_attendance[student_id].get()
-#             attendance_records.append((selected_subject, student_id, attendance_value))
-#
-#         connection = pymysql.connect(
-#             host='localhost',
-#             user='root',
-#             password='',
-#             database='tintots_kindergarden'
-#         )
-#         try:
-#             with connection.cursor() as cursor:
-#                 sql = "INSERT INTO attendance_record (subject, stud_id, attendance) VALUES (%s, %s, %s);"
-#                 cursor.executemany(sql, attendance_records)
-#             connection.commit()
-#             messagebox.showinfo("Success", "Attendance recorded successfully")
-#         except Exception as e:
-#             messagebox.showerror("Error", f"Database error: {str(e)}")
-#         finally:
-#             connection.close()
-#     else:
-#         messagebox.showerror("Error", "Please select both subject and time slot")
-
-
-def fetch_students(selected_subject):
+def submit_attendance(attendance_data, subj_student,selected_subject,submit_btn):
     connection = pymysql.connect(
         host='localhost',
         user='root',
         password='',
         database='tintots_kindergarden'
     )
-    subj_student={}
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    try:
+        with connection.cursor() as cursor:
+            for student_id, var in attendance_data.items():
+                student_name = subj_student[student_id]  # Retrieve student name from subj_student dictionary
+                attendance = 1 if var.get() else 0
+                sql = "INSERT INTO attendance_record (subject, stud_id, student, time_recorded, attendance) VALUES (%s, %s, %s, %s, %s)"
+                cursor.execute(sql, (selected_subject, student_id, student_name, current_time, attendance))
+            connection.commit()
+            messagebox.showinfo("Success", "Attendance recorded successfully!")
+            submit_btn.config(state="disabled")
+            destroy_all_widgets(Frame_attendance)
+            teach_subject('hooi yee', Frame_attendance)
+    except Exception as e:
+        messagebox.showerror("Error", f"Database error: {str(e)}")
+
+row_count = 0
+def fetch_students(selected_subject, frame):
+    global row_count
+    connection = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='',
+        database='tintots_kindergarden'
+    )
+    subj_student = {}
+    cursor = connection.cursor()
     try:
         # Fetch the year of the selected subject
         sql_subject_year = "SELECT year FROM subject WHERE name = %s;"
-        with connection.cursor() as cursor:
-            cursor.execute(sql_subject_year, (selected_subject,))
-            subject_year = cursor.fetchone()
-            if subject_year:
-                # Fetch students whose year matches the year of the selected subject
-                sql_students = "SELECT id, name FROM stud_ms WHERE year = %s;"
-                cursor.execute(sql_students, (subject_year,))
-                result_students = cursor.fetchall()
-                if result_students:
-                    for student in result_students:
-                        subj_student[student[0]] = student[1]
-                else:
-                    tk.messagebox.showerror("Error", "No students found for the selected subject")
+        cursor.execute(sql_subject_year, (selected_subject,))
+        subject_year = cursor.fetchone()
+        if subject_year:
+            # Fetch students whose year matches the year of the selected subject
+            sql_students = "SELECT id, name FROM stud_ms WHERE year = %s;"
+            cursor.execute(sql_students, (subject_year,))
+            result_students = cursor.fetchall()
+            if result_students:
+                for student in result_students:
+                    subj_student[student[0]] = student[1]
             else:
-                tk.messagebox.showerror("Error", "Year not found for the selected subject")
+                tk.messagebox.showerror("Error", "No students found for the selected subject")
+        else:
+            tk.messagebox.showerror("Error", "Year not found for the selected subject")
     except Exception as e:
         tk.messagebox.showerror("Error", f"Database error: {str(e)}")
-    finally:
-        connection.close()
-    tree.delete(*tree.get_children())
-    students_attendance = {}
+
+    ttk.Label(frame, text="No.", style='heading.TLabel').grid(row=1, column=0)
+    ttk.Label(frame, text="Student ID", style='heading.TLabel').grid(row=1, column=1)
+    ttk.Label(frame, text="Student Name", style='heading.TLabel').grid(row=1, column=2)
+    ttk.Label(frame, text="Attendance", style='heading.TLabel').grid(row=1, column=3)
+    separator = ttk.Separator(frame, orient='horizontal')
+    separator.grid(row=2, column=0, columnspan=4, sticky='ew')
+    attendance_data = {}
+    if row_count == 0:
+        row_count = 3
     for i, (student_id, student_name) in enumerate(subj_student.items(), start=1):
-        tree.insert("", "end", values=(i, student_id, student_name, ""))
-        # Create a BooleanVar to store the state of the checkbox
-        students_attendance[student_id] = tk.BooleanVar()
-        # Insert a checkbox for each student's attendance in column 3
-        tree.set(tree.selection()[0], column="Attendance", value="")
-        checkbox = ttk.Checkbutton(tree, variable=students_attendance[student_id], onvalue=1, offvalue=0)
-        tree.window_create(tree.selection()[0], column="Attendance", window=checkbox)
+        ttk.Label(frame, text=str(i), style='general.TLabel').grid(row=row_count, column=0)
+        ttk.Label(frame, text=str(student_id), style='general.TLabel').grid(row=row_count, column=1)
+        ttk.Label(frame, text=str(student_name), style='general.TLabel').grid(row=row_count, column=2)
+        var = tk.BooleanVar()
+        checkbox = tk.Checkbutton(frame, variable=var)
+        checkbox.grid(row=row_count, column=3)
+        attendance_data[student_id] = var
+        row_count += 1
+
+
+
+    submit_button = ttk.Button(frame, text="Submit", command=lambda: submit_attendance(attendance_data, subj_student,selected_subject,submit_button), style='actionBtn.TButton')
+    submit_button.grid(row=len(subj_student) + 3, columnspan=5, pady='20', padx='20', sticky="e")
+    connection.close()
+
 
 def fetch_user(user):
     global user_info
@@ -215,7 +231,7 @@ def edit_profile(user):
     entries = {}
     row = 0
     for field, value in user_info.items():
-        if field in ["id" , "name" , "password" , "email" , "contact"]:
+        if field in ["id" , "name" , "password" , "email" , "contact","address"]:
             ttk.Label(edit_detail, text=field.capitalize() + ":", style='edit.TLabel').grid(row=row, column=0, padx=5,
                                                                                             pady=10, sticky="w")
             entry = ttk.Entry(edit_detail, style='edit.TEntry')
@@ -238,7 +254,7 @@ def edit_profile(user):
         try:
             with connection.cursor() as cursor:
                 sql = "UPDATE staff SET name=%s, email=%s,password=%s,contact=%s,address=%s WHERE id=%s;"
-                cursor.execute(sql, (new_name, new_email, new_password,new_contact,new_contact,user_info['id']))
+                cursor.execute(sql, (new_name, new_email, new_password,new_contact,new_contact,new_address,user_info['id']))
                 connection.commit()
                 edit_window.destroy()
                 tk.messagebox.showinfo("Success", "Profile updated successfully")
@@ -276,8 +292,7 @@ def teach_subject(user, frame):
         class_lbl.grid(row=0, column=0, sticky="e")
         class_sel = ttk.Combobox(frame, values=subjects, font=(font, '12'))
         class_sel.grid(row=0, column=1, sticky="w", padx=20, pady=20)
-        global selected_subject
-        selected_subject = class_sel.get()
+
         # Bind event to class_sel Combobox
         class_sel.bind('<<ComboboxSelected>>', lambda event: fetch_time_slot(class_sel.get()))
 
@@ -298,16 +313,21 @@ def teach_subject(user, frame):
                 tk.messagebox.showerror("Error", f"Database error: {str(e)}")
 
             # Update the time slot dropdown menu
+            global timeSlot
             timeSlot_lbl = ttk.Label(frame, text='Time Slot : ', style='edit.TLabel', background='white',
                                      padding=(40, 40))
-            timeSlot_lbl.grid(row=0, column=3, sticky="e")
+            timeSlot_lbl.grid(row=0, column=2, sticky="e")
             timeSlot = ttk.Combobox(frame, values=time_slots, font=(font, '12'))
-            timeSlot.grid(row=0, column=4, sticky="w", padx=20, pady=20)
-            timeSlot.bind('<<ComboboxSelected>>', lambda event: fetch_students(selected_subject))
+            timeSlot.grid(row=0, column=3, sticky="w", padx=20, pady=20)
+            timeSlot.bind('<<ComboboxSelected>>', lambda event: fetch_students(selected_subject, frame))
+
     except Exception as e:
         tk.messagebox.showerror("Error", f"Database error: {str(e)}")
         return
 
+def list_frame(frame):
+    listing_frame = tk.Label(frame, padx=30, bg='white')
+    listing_frame.grid(row=1, columnspan=5, padx=5, sticky="nsew")
 
 ### GUI ###
 window = tk.Tk()
@@ -353,6 +373,8 @@ action_style.configure('actionBtn.TButton', padding=5,
                 borderradius=30,)
 
 action_style.configure('edit.TLabel', font=(font, 12,'bold'), foreground='black',background='#F0E5F0')
+action_style.configure('heading.TLabel', font=(font, 18,'bold'), foreground='#7E467D',background='white')
+action_style.configure('general.TLabel', font=(font, 12), foreground='black',background='white')
 action_style.configure('edit.TEntry', font=(font, 12),padding=(5, 5, 5, 5))
 action_style.configure('edit.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20),background='#F0E5F0')
 action_style.configure('general.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20),background='white')
@@ -427,17 +449,12 @@ for field, value in user_info.items():
 Frame_attendance = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_attendance)
 Frame_attendance.columnconfigure(1, weight=1)
+
 teach_subject('hooi yee',Frame_attendance)
 
-tree = tk.Treeview(Frame_attendance, columns=("No.", "Student ID", "Student Name", "Attendance"), show="headings")
-tree.grid(row=1, columnspan=5, padx=20, pady=20, sticky="nsew")
-tree.heading("No.", text="No.")
-tree.heading("Student ID", text="Student ID")
-tree.heading("Student Name", text="Student Name")
-tree.heading("Attendance", text="Attendance")
 
-submit_button = ttk.Button(Frame_attendance, text="Record Attendance",style='action.TButton')
-submit_button.grid(row=2, columnspan=4, padx=20, pady=10, sticky="e")
+# submit_button = ttk.Button(Frame_attendance, text="Record Attendance",style='action.TButton')
+# submit_button.grid(row=2, columnspan=4, padx=20, pady=10, sticky="e")
 
 
 # FRAME 3
