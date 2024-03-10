@@ -14,7 +14,8 @@ subjects=[]
 subj_student={}
 time_slot=[]
 user_info={}
-
+record_action=['--','Midterm','Final Exam']
+record_action_list=[]
 
 ### database conn ##
 connection = pymysql.connect(
@@ -266,8 +267,94 @@ def edit_profile(user):
     save_button = ttk.Button(edit_detail, text="Save Changes", command=save_changes, style='actionBtn.TButton')
     save_button.grid(row=row, column=0, columnspan=2, padx=5, pady=10)
 
+def record_marks(selected_subject, frame):
+    global row_count
+    connection = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='',
+        database='tintots_kindergarden'
+    )
+    ttk.Label(frame, text="No.", style='heading.TLabel').grid(row=1, column=0)
+    ttk.Label(frame, text="Student ID", style='heading.TLabel').grid(row=1, column=1)
+    ttk.Label(frame, text="Student Name", style='heading.TLabel').grid(row=1, column=2)
+    ttk.Label(frame, text="Midterm", style='heading.TLabel').grid(row=1, column=3)
+    ttk.Label(frame, text="Final Exam", style='heading.TLabel').grid(row=1, column=4)
+    separator = ttk.Separator(frame, orient='horizontal')
+    separator.grid(row=2, column=0, columnspan=5, sticky='ew')
+    i=1
+    row_count = 3
+    entries_midterm = []
+    entries_final = []
 
-def teach_subject(user, frame):
+    try:
+        sql = "SELECT stud_id, stud_name , midterm, final FROM marks_record WHERE subject = %s;"
+        with connection.cursor() as cursor:
+            cursor.execute(sql, (selected_subject,))
+            result = cursor.fetchall()
+            if result:
+                for slot in result:
+                    ttk.Label(frame, text=str(i), style='general.TLabel').grid(row=row_count, column=0)
+                    ttk.Label(frame, text=slot[0], style='general.TLabel').grid(row=row_count, column=1)
+                    ttk.Label(frame, text=slot[1], style='general.TLabel').grid(row=row_count, column=2)
+                    entry_midterm = ttk.Entry(frame, style='edit.TEntry')
+                    entry_midterm.insert(0, slot[2])
+                    entry_midterm.grid(row=row_count, column=3)
+                    entry_midterm.config(state='disabled')
+                    entries_midterm.append(entry_midterm)
+
+                    entry_final = ttk.Entry(frame, style='edit.TEntry')
+                    entry_final.insert(0, slot[3])
+                    entry_final.grid(row=row_count, column=4)
+                    entry_final.config(state='disabled')
+                    entries_final.append(entry_final)
+
+                    i += 1
+                    row_count += 1
+
+            else:
+                tk.messagebox.showerror("Error", "No student found for selected subject")
+    except Exception as e:
+        tk.messagebox.showerror("Error", f"Database error: {str(e)}")
+
+    def update_entry_state(event):
+        action = recordAction.get()
+        if action == "Midterm":
+            for entry in entries_midterm:
+                entry.config(state='normal')
+            for entry in entries_final:
+                entry.config(state='disabled')
+        elif action == "Final Exam":
+            for entry in entries_midterm:
+                entry.config(state='disabled')
+            for entry in entries_final:
+                entry.config(state='normal')
+
+    def save_records():
+        try:
+            with connection.cursor() as cursor:
+                for idx, (stud_id, _, _, _) in enumerate(result):
+                    midterm = entries_midterm[idx].get()
+                    final_exam = entries_final[idx].get()
+                    sql_update = "UPDATE marks_record SET midterm = %s, final = %s WHERE stud_id = %s AND subject = %s;"
+                    cursor.execute(sql_update, (midterm, final_exam, stud_id, selected_subject))
+                connection.commit()
+                tk.messagebox.showinfo("Success", "Records saved successfully!")
+        except Exception as e:
+            tk.messagebox.showerror("Error", f"Database error: {str(e)}")
+
+    recordAction_lbl = ttk.Label(frame, text='Record Marks for : ', style='edit.TLabel', background='white',
+                                 padding=(40, 40))
+    recordAction_lbl.grid(row=0, column=2, sticky="e")
+    recordAction = ttk.Combobox(frame, values=record_action, font=(font, '12'))
+    recordAction.grid(row=0, column=3, sticky="w", padx=20, pady=20)
+    recordAction.bind('<<ComboboxSelected>>', update_entry_state)
+
+    record_button = ttk.Button(frame, text="Record", command=save_records,style='actionBtn.TButton')
+    record_button.grid(row=row_count+2, columnspan=5, padx=5, pady=5, sticky="se")
+
+
+def teach_subject(user, frame, assessment_frame=None, attendance_frame=None):
     connection = pymysql.connect(
         host='localhost',
         user='root',
@@ -293,8 +380,12 @@ def teach_subject(user, frame):
         class_sel = ttk.Combobox(frame, values=subjects, font=(font, '12'))
         class_sel.grid(row=0, column=1, sticky="w", padx=20, pady=20)
 
-        # Bind event to class_sel Combobox
-        class_sel.bind('<<ComboboxSelected>>', lambda event: fetch_time_slot(class_sel.get()))
+        if frame == assessment_frame:
+            class_sel.bind('<<ComboboxSelected>>', lambda event: record_marks(class_sel.get(), frame))
+            return
+        elif frame == attendance_frame:
+            class_sel.bind('<<ComboboxSelected>>', lambda event: fetch_time_slot(class_sel.get()))
+
 
         def fetch_time_slot(selected_subject):
             time_slots = []
@@ -313,7 +404,7 @@ def teach_subject(user, frame):
                 tk.messagebox.showerror("Error", f"Database error: {str(e)}")
 
             # Update the time slot dropdown menu
-            global timeSlot
+
             timeSlot_lbl = ttk.Label(frame, text='Time Slot : ', style='edit.TLabel', background='white',
                                      padding=(40, 40))
             timeSlot_lbl.grid(row=0, column=2, sticky="e")
@@ -325,9 +416,6 @@ def teach_subject(user, frame):
         tk.messagebox.showerror("Error", f"Database error: {str(e)}")
         return
 
-def list_frame(frame):
-    listing_frame = tk.Label(frame, padx=30, bg='white')
-    listing_frame.grid(row=1, columnspan=5, padx=5, sticky="nsew")
 
 ### GUI ###
 window = tk.Tk()
@@ -373,7 +461,7 @@ action_style.configure('actionBtn.TButton', padding=5,
                 borderradius=30,)
 
 action_style.configure('edit.TLabel', font=(font, 12,'bold'), foreground='black',background='#F0E5F0')
-action_style.configure('heading.TLabel', font=(font, 18,'bold'), foreground='#7E467D',background='white')
+action_style.configure('heading.TLabel', font=(font, 15,'bold'), foreground='#7E467D',background='white')
 action_style.configure('general.TLabel', font=(font, 12), foreground='black',background='white')
 action_style.configure('edit.TEntry', font=(font, 12),padding=(5, 5, 5, 5))
 action_style.configure('edit.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20),background='#F0E5F0')
@@ -450,16 +538,16 @@ Frame_attendance = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_attendance)
 Frame_attendance.columnconfigure(1, weight=1)
 
-teach_subject('hooi yee',Frame_attendance)
+teach_subject('hooi yee', Frame_attendance, attendance_frame=Frame_attendance)
 
-
-# submit_button = ttk.Button(Frame_attendance, text="Record Attendance",style='action.TButton')
-# submit_button.grid(row=2, columnspan=4, padx=20, pady=10, sticky="e")
 
 
 # FRAME 3
-Frame_assessment = tk.Frame(window, bd=5, relief=tk.FLAT, bg="red")
+Frame_assessment = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_assessment)
+
+teach_subject('hooi yee', Frame_assessment, assessment_frame=Frame_assessment)
+
 # FRAME 4
 Frame_report = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_report)
