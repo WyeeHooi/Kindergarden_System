@@ -7,6 +7,7 @@ from PIL import Image, ImageTk
 from datetime import datetime
 import os
 
+user='hooi yee'
 font='Lato'
 
 # subjects=["Bahasa Melayu","English","Mathematics","Science","Living Skills","Physical Education","Art","Music"]
@@ -14,6 +15,7 @@ subjects=[]
 subj_student={}
 time_slot=[]
 user_info={}
+stud_info={}
 record_action=['--','Midterm','Final Exam']
 record_action_list=[]
 
@@ -29,11 +31,6 @@ connection = pymysql.connect(
 def go_back():
     pass
 
-# def toggle_button_state():
-#     if button.cget("state") == "normal":
-#         button.config(state="disabled")
-#     else:
-#         button.config(state="normal")
 
 def on_window_configure(event):
     Frame_buttonNav.place(x=0, y=0, width=window.winfo_width(), height=window.winfo_height()*0.1)
@@ -41,7 +38,7 @@ def on_window_configure(event):
         frame.place(x=0, y=window.winfo_height() * 0.1, width=window.winfo_width(),
                             height=window.winfo_height() * 0.9)
 
-
+#----- General Functions -----#
 def set_active_button(button):
     for b in action_btn:
         if b == button:
@@ -72,6 +69,32 @@ def report_clicked():
 def destroy_all_widgets(frame):
     for widget in frame.winfo_children():
         widget.destroy()
+
+#-----END-----#
+
+#----- Specialized Functions -----#
+
+def get_staff_position(user):
+    try:
+        connection = pymysql.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='tintots_kindergarden'
+        )
+        with connection.cursor() as cursor:
+            # Retrieve the position for the given user
+            sql = "SELECT position FROM staff WHERE name = %s;"
+            cursor.execute(sql, (user,))
+            result = cursor.fetchone()
+            if result:
+                # Return the position
+                return result[0]
+            else:
+                return None  # User not found
+    except Exception as e:
+        tk.messagebox.showerror("Error", f"Database error: {str(e)}")
+
 
 # Function to display the image in the frame
 def display_userPic(frame, width, height, user):
@@ -122,7 +145,7 @@ def submit_attendance(attendance_data, subj_student,selected_subject,submit_btn)
             messagebox.showinfo("Success", "Attendance recorded successfully!")
             submit_btn.config(state="disabled")
             destroy_all_widgets(Frame_attendance)
-            teach_subject('hooi yee', Frame_attendance)
+            teach_subject(user, Frame_attendance)
     except Exception as e:
         messagebox.showerror("Error", f"Database error: {str(e)}")
 
@@ -183,7 +206,7 @@ def fetch_students(selected_subject, frame):
     connection.close()
 
 
-def fetch_user(user):
+def fetch_user(user,table):
     global user_info
     user_info = {}
     connection = pymysql.connect(
@@ -193,25 +216,37 @@ def fetch_user(user):
         database='tintots_kindergarden'
     )
     try:
-        sql = "SELECT * FROM staff WHERE name=%s;"
+        sql = f"SELECT * FROM {table} WHERE name=%s;"
         with connection.cursor() as cursor:
             cursor.execute(sql, (user,))
             result = cursor.fetchone()
             if result:
-                user_info['id'] = result[0]
-                user_info['name'] = result[1]
-                user_info['contact'] = result[2]
-                user_info['password'] = result[3]
-                user_info['age'] = result[4]
-                user_info['address'] = result[5]
-                user_info['email'] = result[6]
-                user_info['qualification'] = result[7]
-                user_info['position'] = result[8]
-                user_info['department'] = result[9]
-                user_info['salary'] = result[10]
-                user_info['profile_pic'] = result[11]
+                if table=='staff':
+                    user_info['id'] = result[0]
+                    user_info['name'] = result[1]
+                    user_info['contact'] = result[2]
+                    user_info['password'] = result[3]
+                    user_info['age'] = result[4]
+                    user_info['address'] = result[5]
+                    user_info['email'] = result[6]
+                    user_info['qualification'] = result[7]
+                    user_info['position'] = result[8]
+                    user_info['department'] = result[9]
+                    user_info['salary'] = result[10]
+                    user_info['profile_pic'] = result[11]
+                elif table=='stud_ms':
+                    stud_info['id'] = result[0]
+                    stud_info['name'] = result[1]
+                    stud_info['age'] = result[2]
+                    stud_info['contact'] = result[3]
+                    stud_info['address'] = result[4]
+                    stud_info['enrol_date'] = result[5]
+                    stud_info['year'] = result[6]
+                    stud_info['subject'] = result[7]
+                    stud_info['annual_review'] = result[8]
+                    stud_info['profile_pic'] = result[9]
             else:
-                tk.messagebox.showerror("Error", "User not found in the database")
+                tk.messagebox.showerror("Error", "User not found.")
                 return
 
     except Exception as e:
@@ -220,7 +255,7 @@ def fetch_user(user):
 
 
 def edit_profile(user):
-    fetch_user(user)
+    fetch_user(user,'staff')
     # Create a pop-up window for editing
     edit_window = tk.Toplevel(Frame_profile,bg='#F0E5F0')
     edit_window.title("Edit Profile")
@@ -467,6 +502,9 @@ action_style.configure('edit.TEntry', font=(font, 12),padding=(5, 5, 5, 5))
 action_style.configure('edit.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20),background='#F0E5F0')
 action_style.configure('general.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20),background='white')
 
+action_style.configure("general.Treeview", font=(font, 10))
+action_style.configure("general.Treeview.Heading", font=(font,12,'bold'))
+
 window.bind('<Configure>', on_window_configure)
 
 ### FRAME ###
@@ -487,7 +525,13 @@ action_btn.append(assessment_button)
 
 report_button = ttk.Button(Frame_buttonNav, text="Report", command=report_clicked, style='inactiveBtn.TButton',width=15)
 report_button.grid(row=0, column=4, padx=5)
-action_btn.append(report_button)
+position=get_staff_position(user)
+
+# if position == 'form teacher':
+#     action_btn.append(report_button)
+# else:
+#     report_button.grid_remove()
+
 
 exit_icon = Image.open("logout.png")
 exit_icon = exit_icon.resize((25, 25), Image.LANCZOS)
@@ -501,8 +545,8 @@ Frame_buttonNav.grid_columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
 ### FRAME 1
 Frame_profile = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_profile)
-display_userPic(Frame_profile, 180, 180, 'hooi yee')
-Editprofile_button = ttk.Button(Frame_profile, text="Edit Profile", command=lambda: edit_profile('hooi yee'), style='actionBtn.TButton',width=15)
+display_userPic(Frame_profile, 180, 180, user)
+Editprofile_button = ttk.Button(Frame_profile, text="Edit Profile", command=lambda: edit_profile(user), style='actionBtn.TButton',width=15)
 Editprofile_button.grid(row=1, column=0, padx=5,pady=5)
 profile_lblframe = ttk.LabelFrame(Frame_profile, text='PROFILE' ,style='general.TLabelframe')
 profile_lblframe.grid(row=0, column=1, padx=5,sticky="nsew")
@@ -510,7 +554,7 @@ Frame_profile.columnconfigure(1, weight=1)
 empty_lblframe=tk.Label(profile_lblframe,padx=30,bg='white')
 empty_lblframe.grid(row=0, column=2, padx=5,sticky="nsew")
 row = 0
-fetch_user('hooi yee')
+fetch_user(user,'staff')
 for field, value in user_info.items():
     value=str(value)
     if field=='profile_pic':
@@ -538,7 +582,7 @@ Frame_attendance = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_attendance)
 Frame_attendance.columnconfigure(1, weight=1)
 
-teach_subject('hooi yee', Frame_attendance, attendance_frame=Frame_attendance)
+teach_subject(user, Frame_attendance, attendance_frame=Frame_attendance)
 
 
 
@@ -546,11 +590,120 @@ teach_subject('hooi yee', Frame_attendance, attendance_frame=Frame_attendance)
 Frame_assessment = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_assessment)
 
-teach_subject('hooi yee', Frame_assessment, assessment_frame=Frame_assessment)
+teach_subject(user, Frame_assessment, assessment_frame=Frame_assessment)
 
-# FRAME 4
+
+
+# FRAME 4 -Report, only available to form teacher
 Frame_report = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_report)
+Frame_report.columnconfigure(1, weight=1)
+
+search_entry = ttk.Entry(Frame_report, width=30,style='edit.TEntry')
+search_entry.grid(row=0, column=3, padx=10, pady=10,sticky='e')
+
+all_student = {}
+searching={}
+
+def search_students():
+    search_text = search_entry.get()
+
+    if not search_text:
+        # If search text is empty, reset the tree to show all items
+        reset_student_table()
+        return
+    else:
+        searching.clear()
+        for id, name in (all_student.items()):
+            if search_text.isdigit():
+                if int(search_text) == id:
+                    searching[id] = name
+            else:
+                if search_text.lower() in name.lower():
+                    searching[id] = name
+
+        if searching:
+            student_tree.delete(*student_tree.get_children())
+            for i, (student_id, student_name) in enumerate(searching.items(), start=1):
+                student_tree.insert("", "end", values=(str(i), str(student_id), student_name))
+        else:
+            tk.messagebox.showinfo("No Student Found", "No student matching the search criteria was found.")
+
+
+def reset_student_table():
+    student_tree.delete(*student_tree.get_children())
+    populate_student_table()
+
+
+
+# Create the search button
+search_button = ttk.Button(Frame_report, text="Search", style='actionBtn.TButton', command=search_students)
+search_button.grid(row=0, column=4, padx=10, pady=10,sticky='w')
+
+# Table to display student information
+columns = ("No.", "Student ID", "Student Name")
+student_tree = ttk.Treeview(Frame_report, columns=columns, show="headings",style="general.Treeview")
+for col in columns:
+    student_tree.heading(col, text=col,anchor="center")
+student_tree.grid(row=1, column=0, columnspan=5, padx=10, pady=10, sticky='nsew')
+
+
+def view_performance_report():
+    selected_item = student_tree.selection()
+    if selected_item:
+        values = student_tree.item(selected_item, "values")
+        student_id = values[1]  # Assuming the student ID is in the second column
+    else:
+        tk.messagebox.showinfo("No Student Selected", "Please select a student from the table.")
+        return
+
+    view_button.configure(state='disabled')
+
+    report_window = tk.Toplevel(window)
+    report_window.title("Performance Report")
+    report_window.geometry(f"+300+80")
+    fetch_user(user, 'stud_ms')
+    name_lbl=ttk.Label(report_window,text=student_id,style='edit.TLabel').grid(row=0,column=0)
+
+
+    report_window.wait_window()
+    view_button.configure(state='normal')
+
+download_button = ttk.Button(Frame_report, text="Download",style='actionBtn.TButton')
+download_button.grid(row=2, column=4, padx=10, pady=10,sticky='e')
+view_button = ttk.Button(Frame_report, text="View", command=view_performance_report,style='activeBtn.TButton')
+view_button.grid(row=2,  column=3, padx=10, pady=10, sticky='e')
+
+
+
+
+def populate_student_table():
+    for i, (student_id, student_name) in enumerate(all_student.items(), start=1):
+        student_tree.insert("", "end", values=(str(i), str(student_id), student_name))
+
+def fetch_all_stud():
+    connection = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='',
+        database='tintots_kindergarden'
+    )
+    cursor = connection.cursor()
+    try:
+        sql = "SELECT id, name FROM stud_ms ;"
+        cursor.execute(sql)
+        students = cursor.fetchall()
+        if students:
+            for result in students:
+                all_student[result[0]] = result[1]
+        else:
+            tk.messagebox.showerror("Error", "No Student Found!")
+    except Exception as e:
+        tk.messagebox.showerror("Error", f"Database error: {str(e)}")
+
+fetch_all_stud()
+populate_student_table()
+
 
 show_frame(Frame_profile)
 set_active_button(profile_button)
