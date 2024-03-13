@@ -9,7 +9,7 @@ from tkinter import filedialog
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-user=2
+user=1
 font='Lato'
 
 # subjects=["Bahasa Melayu","English","Mathematics","Science","Living Skills","Physical Education","Art","Music"]
@@ -64,6 +64,7 @@ def attendance_clicked():
 def assessment_clicked():
     show_frame(Frame_assessment)
     set_active_button(assessment_button)
+    teach_subject(user, Frame_assessment, assessment_frame=Frame_assessment)
 
 def report_clicked():
     show_frame(Frame_report)
@@ -290,18 +291,24 @@ def edit_profile(user):
 
             row += 1
 
-
-    def save_changes():
+    def save_changes(user_info):
+        connection = pymysql.connect(
+            host='localhost',
+            user='root',
+            password='',
+            database='tintots_kindergarden'
+        )
         # Function to save the changes made by the user
-        new_name = str(entries['name'].get())
-        new_password = str(entries['password'].get())
-        new_email = str(entries['email'].get())
-        new_contact = str(entries['contact'].get())
-        new_address = str(entries['address'].get())
+        new_name = entries['name'].get()
+        new_password = entries['password'].get()
+        new_email = entries['email'].get()
+        new_contact = entries['contact'].get()
+        new_address = entries['address'].get()
         try:
             with connection.cursor() as cursor:
-                sql = "UPDATE staff SET name=%s, email=%s,password=%s,contact=%s,address=%s WHERE id=%s;"
-                cursor.execute(sql, (new_name, new_email, new_password,new_contact,new_contact,new_address,int(user_info['id'])))
+                sql = "UPDATE staff SET name=%s, contact=%s, password=%s,  address=%s, email=%s WHERE id=%s;"
+                print(sql, (new_name, new_contact,new_password,  new_address,new_email, user_info['id']))
+                cursor.execute(sql, (new_name, new_contact,new_password,  new_address,new_email, user_info['id']))
                 connection.commit()
                 edit_window.destroy()
                 tk.messagebox.showinfo("Success", "Profile updated successfully")
@@ -310,8 +317,9 @@ def edit_profile(user):
             edit_window.destroy()
 
 
+
     # Button to save changes
-    save_button = ttk.Button(edit_detail, text="Save Changes", command=save_changes, style='actionBtn.TButton')
+    save_button = ttk.Button(edit_detail, text="Save Changes", command=lambda: save_changes(user_info), style='actionBtn.TButton')
     save_button.grid(row=row, column=0, columnspan=2, padx=5, pady=10)
 
 def record_marks(selected_subject, frame):
@@ -539,6 +547,8 @@ def teach_subject(user, frame, assessment_frame=None, attendance_frame=None):
         bind_combobox_selection_event(class_sel, frame)
 
         if frame == assessment_frame:
+            class_lbl = ttk.Label(frame, text='Subject : ', style='edit.TLabel', background='white', padding=(40, 40))
+            class_lbl.grid(row=0, column=0, sticky="e")
             class_sel.bind('<<ComboboxSelected>>', lambda event: record_marks(class_sel.get(), frame))
             destroy_all_widgets(Frame_attendance, None)
             return
@@ -680,13 +690,13 @@ for field, value in user_info.items():
 ttk.Label(Frame_profile, text="Qualification", style='edit.TLabel', background='white').grid(row=1, column=1,padx=10,
         pady=5, sticky="w")
 # Create a Text widget for displaying the content
-content_text = tk.Text(Frame_profile, wrap="word",padx=20,pady=20,font=(font,12))
+content_text = tk.Text(Frame_profile, wrap="word",font=(font,12), borderwidth=0, highlightthickness=0)
 content_text.grid(row=2, column=1, sticky="nsew")
 
 # Create a vertical scrollbar
-vsb = ttk.Scrollbar(Frame_profile, orient="vertical", command=content_text.yview)
-vsb.grid(row=3, column=1, sticky="nsew")
-content_text.config(yscrollcommand=vsb.set)
+qualification = tk.Scrollbar(Frame_profile, orient="vertical", command=content_text.yview, borderwidth=0, highlightthickness=0)
+qualification.grid(row=3, column=1, sticky="nsew")
+content_text.config(yscrollcommand=qualification.set)
 
 # Insert the content text into the Text widget
 content_text.insert("1.0", user_info['qualification'])
@@ -708,7 +718,7 @@ Frame_attendance.columnconfigure(1, weight=1)
 Frame_assessment = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_assessment)
 
-teach_subject(user, Frame_assessment, assessment_frame=Frame_assessment)
+
 
 
 

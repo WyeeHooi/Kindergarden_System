@@ -1,0 +1,67 @@
+CREATE TABLE staff (
+	id 	int(10),
+	name	varchar(225),
+	contact	varchar(20),
+	password varchar(30),
+	age	int(4),
+	address varchar(225),
+	email	varchar(225),
+	qualification varchar(225),
+	position varchar(50),
+	department varchar(50),
+	salary	float(10),
+	profile_pic varchar(225)
+);
+
+INSERT INTO staff VALUES();
+
+
+CREATE TABLE stud_ms (
+	id int(10),
+	name varchar(225),
+	age int(5),
+	contact varchar(20),
+	address varchar(225),
+	enrol_date date,
+	year int(4),
+	annual_review varchar(225),
+	profile_pic varchar(225)	
+	
+);
+
+
+CREATE TABLE subject (
+	code	varchar(15),
+	name	varchar(50),
+	year	int(4),
+	assigned int(10)
+);
+
+
+CREATE TABLE time_slot (
+	id	int(30),
+	subject	varchar(15),
+	day	varchar(10),
+	start_time time(6),
+	end_time time(6)
+);
+
+
+CREATE TABLE marks_record (
+	id	int(10),
+	subject	varchar(225),
+	stud_id	varchar(10),
+	stud_name varchar(225),
+	midterm	float,
+	final	float
+);
+
+
+CREATE TABLE attendance_record (
+	id int(100),
+	subject	varchar(15),
+	stud_id	int(10),
+	student varchar(225),
+	time_recorded datetime,
+	attendance tinyint(1)
+);
