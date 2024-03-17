@@ -1,82 +1,116 @@
-from tkinter import ttk
 import tkinter as tk
+from tkinter import ttk
+from tkcalendar import DateEntry  # Import DateEntry from tkcalendar module
+from tkinter import messagebox
 
-# Define your styles and other settings here
-font='Lato'
+def save_student_data(entry_fields, profile_pic_var, right_frame):
+    # Get values from entry fields
+    id = entry_fields["id"].get()
+    name = entry_fields["name"].get()
+    age = entry_fields["age"].get()
+    contact = entry_fields["contact"].get()
+    address = entry_fields["address"].get()
+    enroll_date = entry_fields["enrollment_date"].get()  # Correct key
+    year = entry_fields["year"].get()  # Correct key
 
+    # Get profile picture path
+    Profile_pic = profile_pic_var.get()
+
+    # Insert data into the database
+    # Assuming the database connection and cursor are already defined
+    query = "INSERT INTO student (id, name, age, contact, address, enroll_date, year, profile_pic) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    cursor.execute(query, (id, name, age, contact, address, enroll_date, year, Profile_pic))
+    conn.commit()
+
+    # Show success message
+    messagebox.showinfo("Success", "Student data saved successfully.")
+
+    # Refresh the treeview with updated data
+    refresh_treetable(right_frame)
+
+    # Clear entry fields after saving data
+    for entry in entry_fields.values():
+        entry.delete(0, tk.END)
+
+def propagate_selected_row(event):
+    # Get the selected item
+    selected_item = student_treeview.selection()
+    if selected_item:
+        # Get the values of the selected row
+        values = student_treeview.item(selected_item, "values")
+        # Update the entry fields with the selected row's values
+        for label, value in zip(student_labels, values):
+            entry_fields[label.lower().replace(" ", "_")].delete(0, tk.END)
+            entry_fields[label.lower().replace(" ", "_")].insert(0, value)
+        # Disable the ADD and CLEAR buttons, and enable the EDIT and DELETE buttons
+        add_button['state'] = 'disabled'
+        edit_button['state'] = 'enabled'
+        delete_button['state'] = 'enabled'
+        clear_btn['state'] = 'disabled'
+
+# Create the main window
 window = tk.Tk()
-screen_width = window.winfo_screenwidth() * 0.99
-screen_height = window.winfo_screenheight() * 0.99
-window.geometry(f"{int(screen_width)}x{int(screen_height)}+0+0")
-window.title("Tintots Kindergarden")
-window.configure(bg="#f0e5f0")
+window.title("Student Management System")
 
-def login():
-    login_frame = tk.Frame(window, background="white")
-    login_frame.pack(expand=True)
+# Define student labels
+student_labels = ["ID", "Name", "Age", "Contact", "Address", "Enrollment Date", "Year"]
 
-    title_lbl = ttk.Label(login_frame, text="Tintots Kindergarden", font=(font, 20, 'bold'), style='heading.TLabel')
-    title_lbl.grid(row=0, columnspan=2, padx=50, pady=50)
+# Create the left and right frames
+left_frame = tk.Frame(window, bg='white')
+left_frame.pack(side=tk.LEFT, fill=tk.Y)
 
-    # Create username and password labels and entry widgets
-    username_label = ttk.Label(login_frame, text="Username:", style="general.TLabel")
-    username_label.grid(row=1, column=0, padx=10, pady=10)
-    username_entry = ttk.Entry(login_frame, width=40, style="edit.TEntry")
-    username_entry.grid(row=1, column=1, padx=10, pady=10)
+right_frame = tk.Frame(window, bg='#F0E5F0')
+right_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
-    password_label = ttk.Label(login_frame, text="Password:", style="general.TLabel")
-    password_label.grid(row=2, column=0, padx=10, pady=10)
-    password_entry = ttk.Entry(login_frame, show="*", width=40, style='edit.TEntry')
-    password_entry.grid(row=2, column=1, padx=10, pady=10)
+# Create entry fields and profile picture selection button in the left frame
+entry_fields = {}
+for i, label in enumerate(student_labels, start=1):
+    ttk.Label(left_frame, text=label).grid(row=i, column=0, padx=10, pady=5)
+    if label != "Year" and label != "Enrollment Date":
+        entry_fields[label.lower().replace(" ", "_")] = ttk.Entry(left_frame)
+        entry_fields[label.lower().replace(" ", "_")].grid(row=i, column=1, padx=10, pady=5)
+    elif label == "Year":
+        # Create a dropdown menu for the 'Year' field
+        year_combobox = ttk.Combobox(left_frame, values=["Year 1", "Year 2", "Year 3"], state="readonly")
+        year_combobox.grid(row=i, column=1, padx=10, pady=5)
+        entry_fields[label.lower().replace(" ", "_")] = year_combobox
+    else:  # label == "Enrollment Date"
+        # Create a DateEntry widget for selecting the date
+        enrollment_date_entry = DateEntry(left_frame, date_pattern="yyyy-mm-dd")
+        enrollment_date_entry.grid(row=i, column=1, padx=10, pady=5)
+        entry_fields[label.lower().replace(" ", "_")] = enrollment_date_entry
 
-    # Admin login button
-    admin_button = ttk.Button(login_frame, text="Admin", style="actionBtn.TButton")
-    admin_button.grid(row=3, column=0)
+# Profile pic selection button
+profile_pic_var = tk.StringVar()
+profile_pic_button = ttk.Button(left_frame, text="Select Profile Picture", command=lambda: select_profile_pic(profile_pic_var))
+profile_pic_button.grid(row=len(student_labels) + 1, columnspan=2, padx=10, pady=5)
 
-    # Teacher login button
-    staff_button = ttk.Button(login_frame, text="Staff",  style="actionBtn.TButton")
-    staff_button.grid(row=3, column=1)
+# Create the buttons at the bottom of the left frame
+add_button = ttk.Button(left_frame, text="Add", command=lambda: save_student_data(entry_fields, profile_pic_var, right_frame))
+add_button.grid(row=len(student_labels) + 2, columnspan=2, padx=10, pady=5)
 
-if __name__ == "__main__":
-    login()
-## General Setting ##
-font = 'Lato'
-btn_style = ttk.Style()
-btn_style.configure('activeBtn.TButton', padding=5,
-                          font=(font, 13, 'bold'),
-                          foreground='#7E467D',
-                          relief=tk.FLAT,
-                          borderwidth=50,
-                          borderradius=30, )
+edit_button = ttk.Button(left_frame, text="Edit", state="disabled")
+edit_button.grid(row=len(student_labels) + 3, columnspan=2, padx=10, pady=5)
 
-btn_style.configure('inactiveBtn.TButton', padding=5,
-                            font=(font, 12),
-                            foreground='#868686',
-                            relief=tk.FLAT,
-                            borderwidth=50,
-                            borderradius=30, )
+delete_button = ttk.Button(left_frame, text="Delete", state="disabled")
+delete_button.grid(row=len(student_labels) + 4, columnspan=2, padx=10, pady=5)
 
+clear_btn = ttk.Button(left_frame, text="Clear", state="disabled")
+clear_btn.grid(row=len(student_labels) + 5, columnspan=2, padx=10, pady=5)
 
-btn_style.configure('actionBtn.TButton', padding=5,
-                       font=(font, 12, 'bold'),
-                       foreground='black',
-                       relief=tk.FLAT,
-                       borderwidth=50,
-                       borderradius=30, ) ## for login, back
+# Create the search entry and button in the right frame
+search_entry = ttk.Entry(right_frame, width=30)
+search_entry.grid(row=0, column=0, padx=10, pady=10)
 
-action_style = ttk.Style()
-action_style.configure('edit.TLabel', font=(font, 12, 'bold'), foreground='black', background='#F0E5F0')  #for edit profile label
-action_style.configure('heading.TLabel', font=(font, 15, 'bold'), foreground='#7E467D', background='white') #for heading label
-action_style.configure('general.TLabel', font=(font, 12), foreground='black', background='white') #for general label
+search_button = ttk.Button(right_frame, text="Search")
+search_button.grid(row=0, column=1, padx=10, pady=10)
 
-action_style.configure('edit.TEntry', font=(font, 12), padding=(5, 5, 5, 5))
+# Create the student treeview in the right frame
+student_treeview = ttk.Treeview(right_frame, columns=student_labels, show="headings")
+student_treeview.grid(row=1, column=0, columnspan=2, padx=10, pady=10)
 
-action_style.configure('edit.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20), background='#F0E5F0',
-                       foreground='black')
-action_style.configure('general.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20), background='white')
+# Bind the selection event to the propagate_selected_row function
+student_treeview.bind("<<TreeviewSelect>>", propagate_selected_row)
 
-action_style.configure("general.Treeview", font=(font, 10))
-action_style.configure("general.Treeview.Heading", font=(font, 12, 'bold'))
-####### General Settings end here ###########
-
+# Run the main event loop
 window.mainloop()
