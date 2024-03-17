@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-from tkinter import filedialog
 import pymysql
 from PIL import Image, ImageTk
 from datetime import datetime
@@ -10,16 +9,19 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 user=1
-font='Lato'
+
+
+
+font = 'Lato'
 
 # subjects=["Bahasa Melayu","English","Mathematics","Science","Living Skills","Physical Education","Art","Music"]
-subjects=[]
-subj_student={}
-time_slot=[]
-user_info={}
-stud_info={}
-record_action=['--','Midterm','Final Exam']
-record_action_list=[]
+subjects = []
+subj_student = {}
+time_slot = []
+user_info = {}
+stud_info = {}
+record_action = ['--', 'Midterm', 'Final Exam']
+record_action_list = []
 
 ### database conn ##
 connection = pymysql.connect(
@@ -33,14 +35,13 @@ connection = pymysql.connect(
 def go_back():
     pass
 
-
 def on_window_configure(event):
-    Frame_buttonNav.place(x=0, y=0, width=window.winfo_width(), height=window.winfo_height()*0.1)
+    Frame_buttonNav.place(x=0, y=0, width=window.winfo_width(), height=window.winfo_height() * 0.1)
     for frame in action_frame:
         frame.place(x=0, y=window.winfo_height() * 0.1, width=window.winfo_width(),
-                            height=window.winfo_height() * 0.9)
+                    height=window.winfo_height() * 0.9)
 
-#----- General Functions -----#
+# ----- General Functions -----#
 def set_active_button(button):
     for b in action_btn:
         if b == button:
@@ -70,17 +71,16 @@ def report_clicked():
     show_frame(Frame_report)
     set_active_button(report_button)
 
-def destroy_all_widgets(frame,obj):
+def destroy_all_widgets(frame, obj):
     for widget in frame.winfo_children():
         if isinstance(widget, (ttk.Combobox)) or widget == obj:
             continue
         else:
             widget.destroy()
 
+# -----END-----#
 
-#-----END-----#
-
-#----- Specialized Functions -----#
+# ----- Specialized Functions -----#
 
 def get_staff_position(user):
     try:
@@ -103,7 +103,6 @@ def get_staff_position(user):
     except Exception as e:
         tk.messagebox.showerror("Error", f"Database error: {str(e)}")
 
-
 # Function to display the image in the frame
 def display_userPic(frame, width, height, user):
     try:
@@ -122,7 +121,7 @@ def display_userPic(frame, width, height, user):
         connection.close()
         load_profilePic(frame, width, height, image_path)
 
-def load_profilePic(frame, width, height,image_path):
+def load_profilePic(frame, width, height, image_path):
     # Load the image
     image = Image.open(image_path)
     # Resize the image
@@ -134,10 +133,9 @@ def load_profilePic(frame, width, height,image_path):
     # Store a reference to the image to prevent it from being garbage collected
     label.image = photo
     # Place the Label in the frame
-    label.grid(row=0, column=0, padx=15,pady=15)
+    label.grid(row=0, column=0, padx=15, pady=15)
 
-
-def submit_attendance(attendance_data, subj_student,selected_subject,submit_btn):
+def submit_attendance(attendance_data, subj_student, selected_subject, submit_btn):
     connection = pymysql.connect(
         host='localhost',
         user='root',
@@ -155,12 +153,13 @@ def submit_attendance(attendance_data, subj_student,selected_subject,submit_btn)
             connection.commit()
             messagebox.showinfo("Success", "Attendance recorded successfully!")
             submit_btn.destroy()
-            destroy_all_widgets(Frame_attendance,None)
+            destroy_all_widgets(Frame_attendance, None)
             teach_subject(user, Frame_attendance)
     except Exception as e:
         messagebox.showerror("Error", f"Database error: {str(e)}")
 
-row_count = 0
+
+
 def fetch_students(selected_subject, frame):
     destroy_all_widgets(frame, class_lbl)
     global row_count
@@ -179,7 +178,7 @@ def fetch_students(selected_subject, frame):
         subject_year = cursor.fetchone()
         if subject_year:
             # Fetch students whose year matches the year of the selected subject
-            sql_students = "SELECT id, name FROM stud_ms WHERE year = %s;"
+            sql_students = "SELECT id, name FROM student WHERE year = %s;"
             cursor.execute(sql_students, (subject_year,))
             result_students = cursor.fetchall()
             if result_students:
@@ -211,16 +210,15 @@ def fetch_students(selected_subject, frame):
         attendance_data[student_id] = var
         row_count += 1
 
-
-
-    submit_button = ttk.Button(frame, text="Submit", command=lambda: submit_attendance(attendance_data, subj_student,selected_subject,submit_button), style='actionBtn.TButton')
-    submit_button.grid(row=row + 3, columnspan=5, pady='20', padx='20', sticky="e")
+    submit_button = ttk.Button(frame, text="Submit",
+                               command=lambda: submit_attendance(attendance_data, subj_student, selected_subject,
+                                                                 submit_button), style='actionBtn.TButton')
+    submit_button.grid(row=row_count + 3, columnspan=5, pady='20', padx='20', sticky="e")
     connection.close()
 
 
-def fetch_user(user,table):
-    global user_info
-    user_info = {}
+def fetch_user(user, table):
+
     connection = pymysql.connect(
         host='localhost',
         user='root',
@@ -233,7 +231,7 @@ def fetch_user(user,table):
             cursor.execute(sql, (user,))
             result = cursor.fetchone()
             if result:
-                if table=='staff':
+                if table == 'staff':
                     user_info['id'] = result[0]
                     user_info['name'] = result[1]
                     user_info['contact'] = result[2]
@@ -246,17 +244,17 @@ def fetch_user(user,table):
                     user_info['department'] = result[9]
                     user_info['salary'] = result[10]
                     user_info['profile_pic'] = result[11]
-                elif table=='stud_ms':
+                    return user_info
+                elif table == 'student':
                     stud_info['id'] = result[0]
                     stud_info['name'] = result[1]
                     stud_info['age'] = result[2]
                     stud_info['contact'] = result[3]
                     stud_info['address'] = result[4]
-                    stud_info['enrol_date'] = result[5]
+                    stud_info['enroll_date'] = result[5]
                     stud_info['year'] = result[6]
-                    stud_info['subject'] = result[7]
-                    stud_info['annual_review'] = result[8]
-                    stud_info['profile_pic'] = result[9]
+                    stud_info['annual_review'] = result[9]
+                    stud_info['profile_pic'] = result[8]
             else:
                 tk.messagebox.showerror("Error", "User not found.")
                 return
@@ -265,11 +263,10 @@ def fetch_user(user,table):
         tk.messagebox.showerror("Error", f"Database error: {str(e)}")
         return
 
-
 def edit_profile(user):
-    fetch_user(user,'staff')
+    fetch_user(user, 'staff')
     # Create a pop-up window for editing
-    edit_window = tk.Toplevel(Frame_profile,bg='#F0E5F0')
+    edit_window = tk.Toplevel(Frame_profile, bg='#F0E5F0')
     edit_window.title("Edit Profile")
     edit_window.geometry(f"+300+150")
     edit_detail = ttk.LabelFrame(edit_window, style='edit.TLabelframe')
@@ -279,8 +276,9 @@ def edit_profile(user):
     entries = {}
     row = 0
     for field, value in user_info.items():
-        if field in ["id" , "name" , "password" , "email" , "contact","address"]:
-            ttk.Label(edit_detail, text=field.capitalize() + ":", style='edit.TLabel').grid(row=row, column=0, padx=5,
+        if field in ["id", "name", "password", "email", "contact", "address"]:
+            ttk.Label(edit_detail, text=field.capitalize() + ":", style='edit.TLabel').grid(row=row, column=0,
+                                                                                            padx=5,
                                                                                             pady=10, sticky="w")
             entry = ttk.Entry(edit_detail, style='edit.TEntry')
             entry.insert(0, value)
@@ -307,8 +305,8 @@ def edit_profile(user):
         try:
             with connection.cursor() as cursor:
                 sql = "UPDATE staff SET name=%s, contact=%s, password=%s,  address=%s, email=%s WHERE id=%s;"
-                print(sql, (new_name, new_contact,new_password,  new_address,new_email, user_info['id']))
-                cursor.execute(sql, (new_name, new_contact,new_password,  new_address,new_email, user_info['id']))
+                print(sql, (new_name, new_contact, new_password, new_address, new_email, user_info['id']))
+                cursor.execute(sql, (new_name, new_contact, new_password, new_address, new_email, user_info['id']))
                 connection.commit()
                 edit_window.destroy()
                 tk.messagebox.showinfo("Success", "Profile updated successfully")
@@ -316,10 +314,9 @@ def edit_profile(user):
             tk.messagebox.showerror("Error", f"Database error: {str(e)}")
             edit_window.destroy()
 
-
-
     # Button to save changes
-    save_button = ttk.Button(edit_detail, text="Save Changes", command=lambda: save_changes(user_info), style='actionBtn.TButton')
+    save_button = ttk.Button(edit_detail, text="Save Changes", command=lambda: save_changes(user_info),
+                             style='actionBtn.TButton')
     save_button.grid(row=row, column=0, columnspan=2, padx=5, pady=10)
 
 def record_marks(selected_subject, frame):
@@ -337,7 +334,7 @@ def record_marks(selected_subject, frame):
     ttk.Label(frame, text="Final Exam", style='heading.TLabel').grid(row=1, column=4)
     separator = ttk.Separator(frame, orient='horizontal')
     separator.grid(row=2, column=0, columnspan=5, sticky='ew')
-    i=1
+    i = 1
     row_count = 3
     entries_midterm = []
     entries_final = []
@@ -405,9 +402,8 @@ def record_marks(selected_subject, frame):
     recordAction.grid(row=0, column=3, sticky="w", padx=20, pady=20)
     recordAction.bind('<<ComboboxSelected>>', update_entry_state)
 
-    record_button = ttk.Button(frame, text="Record", command=save_records,style='actionBtn.TButton')
-    record_button.grid(row=row_count+2, columnspan=5, padx=5, pady=5, sticky="se")
-
+    record_button = ttk.Button(frame, text="Record", command=save_records, style='actionBtn.TButton')
+    record_button.grid(row=row_count + 2, columnspan=5, padx=5, pady=5, sticky="se")
 
 # def teach_subject(user, frame, assessment_frame=None, attendance_frame=None):
 #     connection = pymysql.connect(
@@ -474,9 +470,7 @@ def record_marks(selected_subject, frame):
 #         tk.messagebox.showerror("Error", f"Database error: {str(e)}")
 #         return
 
-
 ### GUI ###
-
 
 def bind_timeslot_combobox_event(timeSlot, selected_subject, frame):
     timeSlot.bind('<<ComboboxSelected>>', lambda event: fetch_students(selected_subject, frame))
@@ -547,7 +541,8 @@ def teach_subject(user, frame, assessment_frame=None, attendance_frame=None):
         bind_combobox_selection_event(class_sel, frame)
 
         if frame == assessment_frame:
-            class_lbl = ttk.Label(frame, text='Subject : ', style='edit.TLabel', background='white', padding=(40, 40))
+            class_lbl = ttk.Label(frame, text='Subject : ', style='edit.TLabel', background='white',
+                                  padding=(40, 40))
             class_lbl.grid(row=0, column=0, sticky="e")
             class_sel.bind('<<ComboboxSelected>>', lambda event: record_marks(class_sel.get(), frame))
             destroy_all_widgets(Frame_attendance, None)
@@ -559,59 +554,61 @@ def teach_subject(user, frame, assessment_frame=None, attendance_frame=None):
         tk.messagebox.showerror("Error", f"Database error: {str(e)}")
         return
 
-
-
 window = tk.Tk()
+screen_width = window.winfo_screenwidth()
+screen_height = window.winfo_screenheight()
+window.geometry(f"{screen_width}x{screen_height}")
 window.geometry("1000x600")
 window.title("Tintots Kindergarden")
 window.configure(bg="#f0e5f0")
 
-action_btn=[]
-action_frame=[]
+action_btn = []
+action_frame = []
 
 # BUTTON STYLING #
 backbtn_style = ttk.Style()
 backbtn_style.configure('backBtn.TButton', padding=5,
-                font=(font, 12,'bold'),
-                foreground='#7E467D',
-                relief=tk.FLAT,
-                borderwidth=0,
-                borderradius=20,
-                highlightthickness=0)
+                        font=(font, 12, 'bold'),
+                        foreground='#7E467D',
+                        relief=tk.FLAT,
+                        borderwidth=0,
+                        borderradius=20,
+                        highlightthickness=0)
 
 activebtn_style = ttk.Style()
 activebtn_style.configure('activeBtn.TButton', padding=5,
-                font=(font, 13,'bold'),
-                foreground='#7E467D',
-                relief=tk.FLAT,
-                borderwidth=50,
-                borderradius=30,)
+                          font=(font, 13, 'bold'),
+                          foreground='#7E467D',
+                          relief=tk.FLAT,
+                          borderwidth=50,
+                          borderradius=30, )
 
 inactivebtn_style = ttk.Style()
 inactivebtn_style.configure('inactiveBtn.TButton', padding=5,
-                font=(font, 12),
-                foreground='#868686',
-                relief=tk.FLAT,
-                borderwidth=50,
-                borderradius=30,)
+                            font=(font, 12),
+                            foreground='#868686',
+                            relief=tk.FLAT,
+                            borderwidth=50,
+                            borderradius=30, )
 
 action_style = ttk.Style()
 action_style.configure('actionBtn.TButton', padding=5,
-                font=(font, 12,'bold'),
-                foreground='black',
-                relief=tk.FLAT,
-                borderwidth=50,
-                borderradius=30,)
+                       font=(font, 12, 'bold'),
+                       foreground='black',
+                       relief=tk.FLAT,
+                       borderwidth=50,
+                       borderradius=30, )
 
-action_style.configure('edit.TLabel', font=(font, 12,'bold'), foreground='black',background='#F0E5F0')
-action_style.configure('heading.TLabel', font=(font, 15,'bold'), foreground='#7E467D',background='white')
-action_style.configure('general.TLabel', font=(font, 12), foreground='black',background='white')
-action_style.configure('edit.TEntry', font=(font, 12),padding=(5, 5, 5, 5))
-action_style.configure('edit.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20),background='#F0E5F0', foreground='black')
-action_style.configure('general.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20),background='white')
+action_style.configure('edit.TLabel', font=(font, 12, 'bold'), foreground='black', background='#F0E5F0')
+action_style.configure('heading.TLabel', font=(font, 15, 'bold'), foreground='#7E467D', background='white')
+action_style.configure('general.TLabel', font=(font, 12), foreground='black', background='white')
+action_style.configure('edit.TEntry', font=(font, 12), padding=(5, 5, 5, 5))
+action_style.configure('edit.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20), background='#F0E5F0',
+                       foreground='black')
+action_style.configure('general.TLabelframe', font=(font, 20, "bold"), bd=3, padding=(20, 20), background='white')
 
 action_style.configure("general.Treeview", font=(font, 10))
-action_style.configure("general.Treeview.Heading", font=(font,12,'bold'))
+action_style.configure("general.Treeview.Heading", font=(font, 12, 'bold'))
 
 window.bind('<Configure>', on_window_configure)
 
@@ -619,82 +616,97 @@ window.bind('<Configure>', on_window_configure)
 ### NAVI
 Frame_buttonNav = tk.Frame(window, bd=5, relief=tk.FLAT, bg="#F0E5F0")
 
-profile_button = ttk.Button(Frame_buttonNav, text="Profile", command=profile_clicked, style='inactiveBtn.TButton',width=15)
+profile_button = ttk.Button(Frame_buttonNav, text="Profile", command=profile_clicked, style='inactiveBtn.TButton',
+                            width=15)
 profile_button.grid(row=0, column=0, padx=5)
 action_btn.append(profile_button)
 
-attendance_button = ttk.Button(Frame_buttonNav, text="Attendance", command=attendance_clicked, style='inactiveBtn.TButton',width=15)
+attendance_button = ttk.Button(Frame_buttonNav, text="Attendance", command=attendance_clicked,
+                               style='inactiveBtn.TButton', width=15)
 attendance_button.grid(row=0, column=1, padx=5)
 action_btn.append(attendance_button)
 
-assessment_button = ttk.Button(Frame_buttonNav, text="Assessment", command=assessment_clicked, style='inactiveBtn.TButton',width=15)
+assessment_button = ttk.Button(Frame_buttonNav, text="Assessment", command=assessment_clicked,
+                               style='inactiveBtn.TButton', width=15)
 assessment_button.grid(row=0, column=2, padx=5)
 action_btn.append(assessment_button)
 
-report_button = ttk.Button(Frame_buttonNav, text="Report", command=report_clicked, style='inactiveBtn.TButton',width=15)
+report_button = ttk.Button(Frame_buttonNav, text="Report", command=report_clicked, style='inactiveBtn.TButton',
+                           width=15)
 report_button.grid(row=0, column=4, padx=5)
-position=get_staff_position(user)
+position = get_staff_position(user)
 
 # if position == 'form teacher':
 #     action_btn.append(report_button)
 # else:
 #     report_button.grid_remove()
 
-
 exit_icon = Image.open("logout.png")
 exit_icon = exit_icon.resize((25, 25), Image.LANCZOS)
 exit_icon = ImageTk.PhotoImage(exit_icon)
-exit_button = ttk.Button(Frame_buttonNav, image=exit_icon,text="Exit", command=window.quit, style='activeBtn.TButton')
+exit_button = ttk.Button(Frame_buttonNav, image=exit_icon, text="Exit", command=window.quit,
+                         style='activeBtn.TButton')
 exit_button.grid(row=0, column=5, sticky="e")
 # Configure column weights to distribute space evenly
 Frame_buttonNav.grid_columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
-
 
 ### FRAME 1
 Frame_profile = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_profile)
 display_userPic(Frame_profile, 180, 180, user)
-Editprofile_button = ttk.Button(Frame_profile, text="Edit Profile", command=lambda: edit_profile(user), style='actionBtn.TButton',width=15)
-Editprofile_button.grid(row=1, column=0, padx=5,pady=5)
-profile_lblframe = ttk.LabelFrame(Frame_profile, text='PROFILE' ,style='general.TLabelframe')
-profile_lblframe.grid(row=0, column=1, padx=5,sticky="nsew")
+Editprofile_button = ttk.Button(Frame_profile, text="Edit Profile", command=lambda: edit_profile(user),
+                                style='actionBtn.TButton', width=15)
+Editprofile_button.grid(row=1, column=0, padx=5, pady=5)
+profile_lblframe = ttk.LabelFrame(Frame_profile, text='PROFILE', style='general.TLabelframe')
+profile_lblframe.grid(row=0, column=1, padx=5, sticky="nsew")
 Frame_profile.columnconfigure(1, weight=1)
-empty_lblframe=tk.Label(profile_lblframe,padx=30,bg='white')
-empty_lblframe.grid(row=0, column=2, padx=5,sticky="nsew")
-row = 0
-fetch_user(user,'staff')
-for field, value in user_info.items():
-    value=str(value)
-    if field=='profile_pic' or field=='password' or field=='salary' or field=='qualification':
-        pass
-    else:
-        if row<=5:
-            ttk.Label(profile_lblframe, text=field.capitalize() + ":", style='edit.TLabel',background='white').grid(row=row, column=0,
-                                                                                                 padx=10,
-                                                                                                 pady=5, sticky="w")
-            ttk.Label(profile_lblframe, text=value, style='edit.TLabel',font=('normal'),background='white').grid(row=row, column=1, padx=10,
-                                                                              pady=5, sticky="w")
+empty_lblframe = tk.Label(profile_lblframe, padx=30, bg='white')
+empty_lblframe.grid(row=0, column=2, padx=5, sticky="nsew")
+def display_user_data():
+    row = 0
+    for field, value in user_info.items():
+        value = str(value)
+        if field == 'profile_pic' or field == 'password' or field == 'salary' or field == 'qualification':
+            pass
         else:
-            ttk.Label(profile_lblframe, text=field.capitalize() + ":", style='edit.TLabel',background='white').grid(row=row-6, column=3,
-                                                                                                 padx=10,
-                                                                                                 pady=5, sticky="w")
-            ttk.Label(profile_lblframe, text=value, style='edit.TLabel',font=('normal'),background='white').grid(row=row-6, column=4, padx=10,
-                                                                  pady=5, sticky="w")
-        row += 1
+            if row <= 5:
+                ttk.Label(profile_lblframe, text=field.capitalize() + ":", style='edit.TLabel',
+                          background='white').grid(row=row, column=0,
+                                                   padx=10,
+                                                   pady=5, sticky="w")
+                ttk.Label(profile_lblframe, text=value, style='edit.TLabel', font=('normal'), background='white',
+                          width=20).grid(row=row, column=1, padx=10,
+                                         pady=5, sticky="w")
+            else:
+                ttk.Label(profile_lblframe, text=field.capitalize() + ":", style='edit.TLabel',
+                          background='white').grid(row=row - 6, column=3,
+                                                   padx=10,
+                                                   pady=5, sticky="w")
+                ttk.Label(profile_lblframe, text=value, style='edit.TLabel', font=('normal'), background='white').grid(
+                    row=row - 6, column=4, padx=10,
+                    pady=5, sticky="w")
+            row += 1
+fetch_user(user, 'staff')
+display_user_data()
+
+
+
 
 # ttk.Label(profile_lblframe, text=user_info['qualification'], style='edit.TLabel', font=('normal'), background='white').grid(row=row,
 #                                                                                                            column=1,
 #                                                                                                            padx=10,
 #                                                                                                            pady=5,
 #                                                                                                         sticky="w")
-ttk.Label(Frame_profile, text="Qualification", style='edit.TLabel', background='white').grid(row=1, column=1,padx=10,
-        pady=5, sticky="w")
+ttk.Label(Frame_profile, text="Qualification", style='edit.TLabel', background='white').grid(row=1, column=1,
+                                                                                             padx=10,
+                                                                                             pady=5, sticky="w")
 # Create a Text widget for displaying the content
-content_text = tk.Text(Frame_profile, wrap="word",font=(font,12), borderwidth=0, highlightthickness=0)
+content_text = tk.Text(Frame_profile, wrap="word", font=(font, 12), borderwidth=0, highlightthickness=0)
 content_text.grid(row=2, column=1, sticky="nsew")
 
 # Create a vertical scrollbar
-qualification = tk.Scrollbar(Frame_profile, orient="vertical", command=content_text.yview, borderwidth=0, highlightthickness=0)
+qualification = tk.Scrollbar(Frame_profile, orient="vertical", command=content_text.yview, borderwidth=0,
+                             highlightthickness=0)
 qualification.grid(row=3, column=1, sticky="nsew")
 content_text.config(yscrollcommand=qualification.set)
 
@@ -702,39 +714,25 @@ content_text.config(yscrollcommand=qualification.set)
 content_text.insert("1.0", user_info['qualification'])
 content_text.config(state="disabled")
 
-
-
-
 # FRAME 2
 Frame_attendance = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_attendance)
 Frame_attendance.columnconfigure(1, weight=1)
 
-
-
-
-
 # FRAME 3
 Frame_assessment = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_assessment)
-
-
-
-
 
 # FRAME 4 -Report, only available to form teacher
 Frame_report = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
 action_frame.append(Frame_report)
 Frame_report.columnconfigure(1, weight=1)
 
-search_entry = ttk.Entry(Frame_report, width=30,style='edit.TEntry')
-search_entry.grid(row=0, column=3, padx=10, pady=10,sticky='e')
+search_entry = ttk.Entry(Frame_report, width=30, style='edit.TEntry')
+search_entry.grid(row=0, column=3, padx=10, pady=10, sticky='e')
 
 all_student = {}
-searching={}
-
-
-
+searching = {}
 
 def search_students():
     search_text = search_entry.get()
@@ -760,22 +758,19 @@ def search_students():
         else:
             tk.messagebox.showinfo("No Student Found", "No student matching the search criteria was found.")
 
-
 def reset_student_table():
     student_tree.delete(*student_tree.get_children())
     populate_student_table()
 
-
-
 # Create the search button
 search_button = ttk.Button(Frame_report, text="Search", style='actionBtn.TButton', command=search_students)
-search_button.grid(row=0, column=4, padx=10, pady=10,sticky='w')
+search_button.grid(row=0, column=4, padx=10, pady=10, sticky='w')
 
 # Table to display student information
 columns = ("No.", "Student ID", "Student Name")
-student_tree = ttk.Treeview(Frame_report, columns=columns, show="headings",style="general.Treeview")
+student_tree = ttk.Treeview(Frame_report, columns=columns, show="headings", style="general.Treeview")
 for col in columns:
-    student_tree.heading(col, text=col,anchor="center")
+    student_tree.heading(col, text=col, anchor="center")
 student_tree.grid(row=1, column=0, columnspan=5, padx=10, pady=10, sticky='nsew')
 
 def view_performance_report():
@@ -798,10 +793,8 @@ def on_select(event):
         if event.widget.focus():
             tk.messagebox.showinfo("No Student Selected from table", "Please select a student from the table.")
 
-
 # Bind the on_select function to the Treeview widget
 student_tree.bind("<<TreeviewSelect>>", on_select)
-
 
 def grade(marks):
     if marks >= 90:
@@ -819,20 +812,19 @@ def grade(marks):
     else:
         return 'F'
 
-
 def display_performance_report(student_id):
     view_button.configure(state='disabled')
-    report_window = tk.Toplevel(window, bg='#F0E5F0',pady=20,padx=20)
+    report_window = tk.Toplevel(window, bg='#F0E5F0', pady=20, padx=20)
     report_window.title("Performance Report")
     report_window.geometry(f"+300+80")
 
-    fetch_user(student_id, 'stud_ms')
+    fetch_user(student_id, 'student')
     row = 1
     for field, value in stud_info.items():
         value = str(value)
         if field == 'profile_pic':
             load_profilePic(report_window, 80, 80, value)
-        elif field == 'annual_review' or field == 'subject' or field=='year':
+        elif field == 'annual_review' or field == 'subject' or field == 'year':
             pass
         else:
             ttk.Label(report_window, text=field.capitalize() + ":", style='edit.TLabel').grid(row=row, column=0,
@@ -843,10 +835,13 @@ def display_performance_report(student_id):
                 pady=5, sticky="w")
 
             row += 1
-    ttk.Label(report_window, text="Year: "+str(stud_info['year']), style='edit.TLabel').grid(row=0, column=4,columnspan=2, padx=20, pady=20,sticky='w')
+    ttk.Label(report_window, text="Year: " + str(stud_info['year']), style='edit.TLabel').grid(row=0, column=4,
+                                                                                               columnspan=2,
+                                                                                               padx=20, pady=20,
+                                                                                               sticky='w')
 
     report_detail = ttk.LabelFrame(report_window, text='Academic Report', style='edit.TLabelframe')
-    report_detail.grid(row=1, rowspan=row-1, column=4, columnspan=2, padx=20, pady=20)
+    report_detail.grid(row=1, rowspan=row - 1, column=4, columnspan=2, padx=20, pady=20)
     ttk.Label(report_detail, text="No.", style='edit.TLabel').grid(row=1, column=0)
     ttk.Label(report_detail, text="Subject", style='edit.TLabel').grid(row=1, column=1)
     ttk.Label(report_detail, text="Midterm", style='edit.TLabel').grid(row=1, column=2)
@@ -856,10 +851,12 @@ def display_performance_report(student_id):
     separator = ttk.Separator(report_detail, orient='horizontal')
     separator.grid(row=2, column=0, columnspan=6, sticky='ew')
 
-    ttk.Label(report_window, text="Form Teacher Comment:", style='edit.TLabel').grid(row=row, column=4,columnspan=2, padx=20, pady=20,sticky='w')
+    ttk.Label(report_window, text="Form Teacher Comment:", style='edit.TLabel').grid(row=row, column=4,
+                                                                                     columnspan=2, padx=20, pady=20,
+                                                                                     sticky='w')
     comment_entry = ttk.Entry(report_window, style='edit.TEntry')
     comment_entry.insert(0, stud_info['annual_review'])
-    comment_entry.grid(row=row, column=5,columnspan=2, padx=20, pady=20,sticky='we')
+    comment_entry.grid(row=row, column=5, columnspan=2, padx=20, pady=20, sticky='we')
 
     i = 1
     counter = 3
@@ -873,7 +870,7 @@ def display_performance_report(student_id):
     cursor = connection.cursor()
     try:
         sql = "SELECT * FROM marks_record WHERE stud_id = %s;"
-        cursor.execute(sql, int(student_id,))
+        cursor.execute(sql, int(student_id, ))
         subject_marks = cursor.fetchall()
         if subject_marks:
             for itm in subject_marks:
@@ -895,7 +892,8 @@ def display_performance_report(student_id):
                 ttk.Label(report_detail, text=str(grade((midterm + final) / 2)), style='edit.TLabel').grid(
                     row=counter, column=4)
                 # Handle division by zero when calculating attendance percentage
-                attendance_percentage = (atten_count.count(0) / len(atten_count) * 100) if len(atten_count) != 0 else 0
+                attendance_percentage = (atten_count.count(0) / len(atten_count) * 100) if len(
+                    atten_count) != 0 else 0
                 ttk.Label(report_detail, text='{}%'.format(round(attendance_percentage)), style='edit.TLabel').grid(
                     row=counter, column=5)
                 i += 1
@@ -907,7 +905,7 @@ def display_performance_report(student_id):
 
     def submit_close(stud_id):
         try:
-            sql = "UPDATE stud_ms SET annual_review = %s WHERE id = %s;"
+            sql = "UPDATE student SET annual_review = %s WHERE id = %s;"
             cursor.execute(sql, (comment_entry.get(), stud_id))
             connection.commit()
             report_window.destroy()  # Close the report window
@@ -943,18 +941,14 @@ def display_performance_report(student_id):
         except Exception as e:
             tk.messagebox.showerror("Error", f"Failed to download report: {str(e)}")
 
-    done_button = ttk.Button(report_window, text="Done", style='actionBtn.TButton', command=lambda: submit_close(student_id))
-    done_button.grid(row=row+1, column=4, padx=20,sticky='e')
-    download_button = ttk.Button(report_window, text="Download", style='actionBtn.TButton',command=download_report)
-    download_button.grid(row=row+1, column=5, padx=20,sticky='e')
+    done_button = ttk.Button(report_window, text="Done", style='actionBtn.TButton',
+                             command=lambda: submit_close(student_id))
+    done_button.grid(row=row + 1, column=4, padx=20, sticky='e')
+    download_button = ttk.Button(report_window, text="Download", style='actionBtn.TButton', command=download_report)
+    download_button.grid(row=row + 1, column=5, padx=20, sticky='e')
 
-
-
-view_button = ttk.Button(Frame_report, text="View", command=view_performance_report,style='activeBtn.TButton',)
-view_button.grid(row=2,  column=3, padx=10, pady=10, sticky='e')
-
-
-
+view_button = ttk.Button(Frame_report, text="View", command=view_performance_report, style='activeBtn.TButton', )
+view_button.grid(row=2, column=3, padx=10, pady=10, sticky='e')
 
 def populate_student_table():
     for i, (student_id, student_name) in enumerate(all_student.items(), start=1):
@@ -969,7 +963,7 @@ def fetch_all_stud():
     )
     cursor = connection.cursor()
     try:
-        sql = "SELECT id, name FROM stud_ms ;"
+        sql = "SELECT id, name FROM student ;"
         cursor.execute(sql)
         students = cursor.fetchall()
         if students:
@@ -983,8 +977,10 @@ def fetch_all_stud():
 fetch_all_stud()
 populate_student_table()
 
-
 show_frame(Frame_profile)
 set_active_button(profile_button)
 
 window.mainloop()
+
+
+

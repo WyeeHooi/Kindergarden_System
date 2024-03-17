@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 13, 2024 at 10:22 AM
+-- Generation Time: Mar 17, 2024 at 11:53 AM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -48,7 +48,33 @@ INSERT INTO `attendance_record` (`id`, `subject`, `stud_id`, `student`, `time_re
 (63, 'Science', 20240204, 'try1', '2024-03-13 11:31:51', 1),
 (64, 'Living Ski', 20240205, 'try2', '2024-03-13 14:17:11', 1),
 (65, 'Science', 20240204, 'try1', '2024-03-13 14:17:37', 1),
-(66, 'Living Ski', 20240205, 'try2', '2024-03-13 17:18:04', 1);
+(66, 'Living Ski', 20240205, 'try2', '2024-03-13 17:18:04', 1),
+(67, 'Mathematic', 20240204, 'try1', '2024-03-16 22:30:02', 0),
+(68, 'Mathematic', 20240204, 'try1', '2024-03-17 12:43:57', 1),
+(69, 'Science', 35, 'Michael Tan', '2024-03-17 13:08:23', 0),
+(70, 'Science', 38, 'Liam Tan', '2024-03-17 13:08:23', 0),
+(71, 'Science', 41, 'Olivia Goh', '2024-03-17 13:08:23', 0),
+(72, 'Science', 44, 'Jane Smith', '2024-03-17 13:08:23', 1),
+(73, 'Science', 47, 'Michael Tan', '2024-03-17 13:08:23', 1),
+(74, 'Science', 50, 'Liam Tan', '2024-03-17 13:08:23', 1),
+(75, 'Science', 53, 'Olivia Goh', '2024-03-17 13:08:23', 0),
+(76, 'Science', 56, 'Jane Smith', '2024-03-17 13:08:23', 0),
+(77, 'Mathematic', 35, 'Michael Tan', '2024-03-17 14:08:46', 1),
+(78, 'Mathematic', 38, 'Liam Tan', '2024-03-17 14:08:46', 1),
+(79, 'Mathematic', 41, 'Olivia Goh', '2024-03-17 14:08:46', 0),
+(80, 'Mathematic', 44, 'Jane Smith', '2024-03-17 14:08:46', 0),
+(81, 'Mathematic', 47, 'Michael Tan', '2024-03-17 14:08:46', 0),
+(82, 'Mathematic', 50, 'Liam Tan', '2024-03-17 14:08:46', 0),
+(83, 'Mathematic', 53, 'Olivia Goh', '2024-03-17 14:08:46', 0),
+(84, 'Mathematic', 56, 'Jane Smith', '2024-03-17 14:08:46', 0),
+(85, 'Science', 35, 'Michael Tan', '2024-03-17 18:27:54', 1),
+(86, 'Science', 38, 'Liam Tan', '2024-03-17 18:27:54', 1),
+(87, 'Science', 41, 'Olivia Goh', '2024-03-17 18:27:54', 1),
+(88, 'Science', 44, 'Jane Smith', '2024-03-17 18:27:54', 1),
+(89, 'Science', 47, 'Michael Tan', '2024-03-17 18:27:54', 1),
+(90, 'Science', 50, 'Liam Tan', '2024-03-17 18:27:54', 1),
+(91, 'Science', 53, 'Olivia Goh', '2024-03-17 18:27:54', 1),
+(92, 'Science', 56, 'Jane Smith', '2024-03-17 18:27:54', 1);
 
 -- --------------------------------------------------------
 
@@ -71,7 +97,7 @@ CREATE TABLE `marks_record` (
 
 INSERT INTO `marks_record` (`id`, `subject`, `stud_id`, `stud_name`, `midterm`, `final`) VALUES
 (6, 'Art', '20240204', 'try1', 0, 0),
-(7, 'Mathematics', '20240204', 'try1', 80, 90),
+(7, 'Mathematics', '20240204', 'try1', 80, 70),
 (8, 'Science', '20240204', 'try1', 50, 70),
 (9, 'Living Skills', '20240205', 'try2', 0, 0),
 (10, 'Music', '20240205', 'try2', 0, 0),
@@ -90,7 +116,7 @@ CREATE TABLE `staff` (
   `contact` varchar(20) NOT NULL,
   `password` varchar(255) NOT NULL,
   `age` varchar(4) NOT NULL,
-  `address` varchar(225) NOT NULL,
+  `address` text NOT NULL,
   `email` varchar(225) NOT NULL,
   `qualification` text NOT NULL,
   `position` varchar(225) NOT NULL,
@@ -104,8 +130,59 @@ CREATE TABLE `staff` (
 --
 
 INSERT INTO `staff` (`id`, `name`, `contact`, `password`, `age`, `address`, `email`, `qualification`, `position`, `department`, `salary`, `profile_pic`) VALUES
-(1, 'Shaif', '0102002', 'haha', '23', 'Taman Haha', 'haha@gg.com', 'Experienced educator with [X] years in [mention settings such as public or private schools], adept at creating engaging lesson plans, fostering inclusive learning environments, and promoting student success. Skilled in [menti', 'Teacher', 'Academic', 2333, '\\xampp\\htdocs\\tintots\\placeholder.jpg'),
-(2, 'hooi yee', '0102002', 'ggg', '23', '0102002', 'gg.com', '-', 'teacher', 'teaching', 2333, '\\xampp\\htdocs\\tintots\\Background.png');
+(1, 'Shaihy', '0102002', 'haha_no_pswd', '23', 'No.30, Jalan Sana, \r\nTaman Situ 34500.', 'haha@gg.com', 'Skilled in playing piano, flute, and guitar\r\nAn enthusiastic and engaging storyteller\r\nExcellent at interacting with children as young as 4 years old\r\nExtreme patience and understanding\r\nGreat organisational skills\r\nKnowledgeable in MS Office applications', 'Teacher', 'Academic', 2333, '\\xampp\\htdocs\\tintots\\placeholder.jpg'),
+(2, 'hooi yee', '0102002', 'ggg', '23', '0102002', 'gg.com', '-', 'teacher', 'teaching', 2333, '\\xampp\\htdocs\\tintots\\Background.png'),
+(20002020, 'admin', '234567890', 'gg', '34', 'sdfgh', 'hahahaha@7788.com', '-', 'admininstrator', 'admin', 2435, ''),
+(2004010101, 'halo', '01000100101', 'halo', '23', 'taman halo', 'halo@gg.com', 'halo bye', 'teacher', 'academic', 0, '\\xampp\\htdocs\\tintots\\Background.png');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `student`
+--
+
+CREATE TABLE `student` (
+  `id` int(11) NOT NULL,
+  `name` varchar(225) DEFAULT NULL,
+  `age` int(10) DEFAULT NULL,
+  `contact` varchar(25) DEFAULT NULL,
+  `address` varchar(225) DEFAULT NULL,
+  `enroll_date` date DEFAULT NULL,
+  `year` int(2) DEFAULT NULL,
+  `emergency_contact` varchar(25) DEFAULT NULL,
+  `profile_pic` varchar(255) DEFAULT NULL,
+  `annual_review` varchar(225) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `student`
+--
+
+INSERT INTO `student` (`id`, `name`, `age`, `contact`, `address`, `enroll_date`, `year`, `emergency_contact`, `profile_pic`, `annual_review`) VALUES
+(34, 'Sarah Lee', 5, '0192837465', 'No. 567, Persiaran MNO, 30010, Penang', '2022-04-05', 1, '0161616161', NULL, ''),
+(35, 'Michael Tan', 3, '0165478923', 'No. 890, Jalan PQR, 60020, Malacca', '2022-05-10', 2, '0131313131', NULL, ''),
+(36, 'Lisa Wong', 4, '0134689752', 'No. 234, Jalan GHI, 70030, Sabah', '2022-06-15', 3, '0171717171', NULL, ''),
+(37, 'Emma Lee', 4, '0123456789', 'No. 1, Jalan ABC, 43000, Selangor', '2022-01-01', 1, '0123456789', NULL, ''),
+(38, 'Liam Tan', 5, '0987654321', 'No. 2, Lebuh XYZ, 50450, Kuala Lumpur', '2022-02-15', 2, '0198765432', NULL, ''),
+(39, 'Mia Wong', 4, '0112233445', 'No. 3, Lorong DEF, 80000, Johor Bahru', '2022-03-20', 3, '0189898989', NULL, ''),
+(40, 'Noah Lim', 5, '0192837465', 'No. 4, Persiaran MNO, 30010, Penang', '2022-04-05', 1, '0161616161', NULL, ''),
+(41, 'Olivia Goh', 4, '0165478923', 'No. 5, Jalan PQR, 60020, Malacca', '2022-05-10', 2, '0131313131', NULL, ''),
+(42, 'Ethan Ng', 5, '0134689752', 'No. 6, Jalan GHI, 70030, Sabah', '2022-06-15', 3, '0171717171', NULL, ''),
+(43, 'John Doe', 5, '0123456789', 'No. 123, Jalan ABC, 43000, Selangor', '2022-06-15', 1, '0123456789', NULL, ''),
+(44, 'Jane Smith', 3, '01987654321', 'No. 456, Lebuh XYZ, 50450, Kuala Lumpur', '2022-02-15', 2, '0198765432', NULL, ''),
+(45, 'Ahmad Bin', 5, '0112233445', 'No. 789, Lorong DEF, 80000, Johor Bahru', '2022-03-20', 3, '0189898989', NULL, ''),
+(46, 'Sarah Lee', 5, '0192837465', 'No. 567, Persiaran MNO, 30010, Penang', '2022-04-05', 1, '0161616161', NULL, ''),
+(47, 'Michael Tan', 3, '0165478923', 'No. 890, Jalan PQR, 60020, Malacca', '2022-05-10', 2, '0131313131', NULL, ''),
+(48, 'Lisa Wong', 4, '0134689752', 'No. 234, Jalan GHI, 70030, Sabah', '2022-06-15', 3, '0171717171', NULL, ''),
+(49, 'Emma Lee', 4, '0123456789', 'No. 1, Jalan ABC, 43000, Selangor', '2022-01-01', 1, '0123456789', NULL, ''),
+(50, 'Liam Tan', 5, '0987654321', 'No. 2, Lebuh XYZ, 50450, Kuala Lumpur', '2022-02-15', 2, '0198765432', NULL, ''),
+(51, 'Mia Wong', 4, '0112233445', 'No. 3, Lorong DEF, 80000, Johor Bahru', '2022-03-20', 3, '0189898989', NULL, ''),
+(52, 'Noah Lim', 5, '0192837465', 'No. 4, Persiaran MNO, 30010, Penang', '2022-04-05', 1, '0161616161', NULL, ''),
+(53, 'Olivia Goh', 4, '0165478923', 'No. 5, Jalan PQR, 60020, Malacca', '2022-05-10', 2, '0131313131', NULL, ''),
+(54, 'Ethan Ng', 5, '0134689752', 'No. 6, Jalan GHI, 70030, Sabah', '2022-06-15', 3, '0171717171', NULL, ''),
+(55, 'John Doe', 5, '0123456789', 'No. 123, Jalan ABC, 43000, Selangor', '2022-06-15', 1, '0123456789', NULL, ''),
+(56, 'Jane Smith', 3, '01987654321', 'No. 456, Lebuh XYZ, 50450, Kuala Lumpur', '2022-02-15', 2, '0198765432', NULL, ''),
+(57, 'Ahmad Bin', 5, '0112233445', 'No. 789, Lorong DEF, 80000, Johor Bahru', '2022-03-20', 3, '0189898989', NULL, '');
 
 -- --------------------------------------------------------
 
@@ -153,14 +230,14 @@ CREATE TABLE `subject` (
 --
 
 INSERT INTO `subject` (`code`, `name`, `year`, `assigned`) VALUES
-('AT02', 'Art', 2, 2),
+('AT02', 'Art', 2, 2004010101),
 ('BM01', 'Bahasa Melayu', 1, 2),
 ('EG01', 'English', 1, 2),
 ('LS03', 'Living Skills', 3, 1),
 ('MS03', 'Music', 3, 1),
-('MT02', 'Mathematics', 2, 1),
+('MT02', 'Mathematics', 2, 2004010101),
 ('PE03', 'Physical Education', 3, 2),
-('SC02', 'Science', 2, 1);
+('SC02', 'Science', 2, 2004010101);
 
 -- --------------------------------------------------------
 
@@ -220,6 +297,12 @@ ALTER TABLE `staff`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `student`
+--
+ALTER TABLE `student`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `stud_ms`
 --
 ALTER TABLE `stud_ms`
@@ -247,7 +330,7 @@ ALTER TABLE `time_slot`
 -- AUTO_INCREMENT for table `attendance_record`
 --
 ALTER TABLE `attendance_record`
-  MODIFY `id` int(100) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
+  MODIFY `id` int(100) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=93;
 
 --
 -- AUTO_INCREMENT for table `marks_record`
@@ -259,7 +342,13 @@ ALTER TABLE `marks_record`
 -- AUTO_INCREMENT for table `staff`
 --
 ALTER TABLE `staff`
-  MODIFY `id` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(5) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2004010102;
+
+--
+-- AUTO_INCREMENT for table `student`
+--
+ALTER TABLE `student`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
 
 --
 -- AUTO_INCREMENT for table `stud_ms`

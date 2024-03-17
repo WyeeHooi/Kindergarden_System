@@ -1,0 +1,73 @@
+label = tk.Label(window, text="Tintots Kindergarden", font=custom_font)
+label.pack(pady=150)
+# Main buttons frame
+main_buttons_frame = tk.Frame(window)
+main_buttons_frame.pack(pady=150)
+
+# Admin button
+admin_button = ttk.Button(main_buttons_frame, text="Admin", command=open_admin_login, style="aactiveBtn.TButton", width=100)
+admin_button.grid(row=0, column=0, padx=50)
+
+# Staff button
+staff_button = ttk.Button(main_buttons_frame, text="Staff", command=staff_login, style="aactiveBtn.TButton",width=100)
+staff_button.grid(row=1, column=0, padx=50)
+
+#staff login
+staff_login_frame = tk.Frame(window)
+
+staff_username_label = ttk.Label(staff_login_frame, text="Username:",style="CustomLabel.TLabel")
+staff_username_label.pack()
+
+staff_username_entry = ttk.Entry(staff_login_frame,width=40,font=label_font)
+staff_username_entry.pack()
+
+staff_password_label = ttk.Label(staff_login_frame, text="Password:",style="CustomLabel.TLabel")
+staff_password_label.pack()
+
+staff_password_entry = ttk.Entry(staff_login_frame, show="*",width=40,font=label_font)
+staff_password_entry.pack()
+
+staff_login_button = ttk.Button(staff_login_frame, text="Login", command=staff_authenticate, style="aactiveBtn.TButton",width=50)
+staff_login_button.pack(pady=10)
+
+def staff_login():
+    # Hide the main buttons frame
+    main_buttons_frame.pack_forget()
+
+
+    # Show the staff login frame
+    staff_login_frame.pack(pady=150)
+
+def staff_authenticate(user):
+    username = staff_username_entry.get()
+    password = staff_password_entry.get()
+
+    if not (8 <= len(username) <= 10) or not username.isdigit():
+        messagebox.showerror("Staff Login", "Invalid username, you may not an admin try to login as a staff")
+        return
+
+    conn = pymysql.connect(
+        host='localhost',
+        user='root',
+        password='',
+        database='tintots_kindergarden'
+    )
+    if conn:
+        try:
+            cursor = conn.cursor()
+            query = "SELECT * FROM staff WHERE id = %s AND password = %s"
+            cursor.execute(query, (username, password))
+            result = cursor.fetchone()
+            if result:
+                messagebox.showinfo("Staff Login", "Staff login successful!")
+                # Pass user ID as a list containing the username converted to an integer
+                user_id = int(username)
+                #display_staff_profile(window, user)
+            else:
+                messagebox.showerror("Staff Login", "Invalid username or password.")
+        except pymysql.Error as e:
+            messagebox.showerror("Error", f"Database error: {str(e)}")
+        finally:
+            conn.close()
+    else:
+        messagebox.showerror("Error", "Failed to connect to database.")

@@ -1,0 +1,13 @@
+name,age,contact,address,enroll_date,year,emergency_contact
+Sarah Lee,5,0192837465,"No. 567, Persiaran MNO, 30010, Penang",4/5/2022,1,0161616161
+Michael Tan,3,0165478923,"No. 890, Jalan PQR, 60020, Malacca",5/10/2022,2,0131313131
+Lisa Wong,4,0134689752,"No. 234, Jalan GHI, 70030, Sabah",06/15/2022,3,0171717171
+Emma Lee,4,0123456789,"No. 1, Jalan ABC, 43000, Selangor",1/1/2022,1,0123456789
+Liam Tan,5,0987654321,"No. 2, Lebuh XYZ, 50450, Kuala Lumpur",02/15/2022,2,0198765432
+Mia Wong,4,0112233445,"No. 3, Lorong DEF, 80000, Johor Bahru",03/20/2022,3,0189898989
+Noah Lim,5,0192837465,"No. 4, Persiaran MNO, 30010, Penang",4/5/2022,1,0161616161
+Olivia Goh,4,0165478923,"No. 5, Jalan PQR, 60020, Malacca",5/10/2022,2,0131313131
+Ethan Ng,5,0134689752,"No. 6, Jalan GHI, 70030, Sabah",06/15/2022,3,0171717171
+John Doe,5,0123456789,"No. 123, Jalan ABC, 43000, Selangor",06/15/2022,1,0123456789
+Jane Smith,3,01987654321,"No. 456, Lebuh XYZ, 50450, Kuala Lumpur",02/15/2022,2,0198765432
+Ahmad Bin,5,0112233445,"No. 789, Lorong DEF, 80000, Johor Bahru",03/20/2022,3,0189898989
