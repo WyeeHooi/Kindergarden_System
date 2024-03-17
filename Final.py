@@ -206,6 +206,39 @@ def select_profile_pic(profile_pic_path):
 
 ####### General functions ends here #########
 
+def teacher_authenticate(login_frame,username_entry, password_entry):
+    username = username_entry.get()
+    password = password_entry.get()
+
+    if not (8 <= len(username) <= 10) or not username.isdigit():
+        messagebox.showerror("Staff Login", "Invalid user ID, you may not an admin try to login as a staff")
+        return
+
+    conn=db_connect()
+
+    if conn:
+        try:
+            cursor = conn.cursor()
+            query = "SELECT * FROM staff WHERE id = %s AND password = %s"
+            cursor.execute(query, (username, password))
+            result = cursor.fetchone()
+            if result:
+                import staff
+                # messagebox.showinfo("Staff Login", "Staff login successful!")
+                # Pass user ID as a list containing the username converted to an integer
+                login_frame.destroy()
+                window.destroy()
+                user_id = int(username)
+                staff.initiate(user_id)
+            else:
+                messagebox.showerror("Staff Login", "Invalid username or password.")
+        except pymysql.Error as e:
+            messagebox.showerror("Error", f"Database error: {str(e)}")
+        finally:
+            conn.close()
+    else:
+        messagebox.showerror("Error", "Failed to connect to database.")
+
 def admin_authenticate(loginframe,admin_username_entry, admin_password_entry):
     # Get username and password
     username = admin_username_entry.get()
@@ -213,7 +246,7 @@ def admin_authenticate(loginframe,admin_username_entry, admin_password_entry):
 
     # Check if ID is an 8-digit integer
     if len(username) != 8 or not username.isdigit():
-        messagebox.showerror("Admin Login", "Invalid username format. Please enter an 8-digit ID number.")
+        messagebox.showerror("Admin Login", "Invalid user ID. Please enter an 8-digit ID number.")
         return
 
     # Authenticate using database
@@ -269,7 +302,7 @@ def admin_main_interface(user):
     head_lbl=ttk.Label(Frame_adminBoard,style='edit.TLabel',font=(font,18),text=greet+' Admin \n\nWhat\'s on the agenda for today?')
     head_lbl.grid(row=0,column=0,columnspan=3)
 
-    staffData_button = ttk.Button(Frame_adminBoard, text="Staff Data", command=lambda: edit_profile(),
+    staffData_button = ttk.Button(Frame_adminBoard, text="Staff Data", command=lambda: show_staff_data(user),
                                     style='activeBtn.TButton', width=15)
     staffData_button.grid(row=1, column=0,columnspan=2, padx=5, pady=25,sticky='we')
     studentData_button = ttk.Button(Frame_adminBoard, text="Student Data", command=lambda: show_student_data(user),
@@ -279,14 +312,531 @@ def admin_main_interface(user):
                                   style='activeBtn.TButton', width=15)
     classSlot_button.grid(row=3, column=0, columnspan=2, padx=5, pady=25, sticky='we')
 
-def refresh_treetable(treetable):
+def refresh_treetable(treetable,table):
     # Clear existing data from the Treeview widget
     treetable.delete(*treetable.get_children())
 
     # Repopulate the Treeview widget with the latest data from the database
-    list=fetch_all_stud()
+    list=fetch_all_stud(table)
     for row in list:
         treetable.insert('', 'end', values=row)
+
+### Staff Data ###
+def show_staff_data(user):
+    global all_stud
+    # Clear existing widgets from the parent frame
+    for widget in window.winfo_children():
+        widget.destroy()
+
+    all_stud=fetch_all_stud('staff')
+    back_button = ttk.Button(window, style='activeBtn.TButton', text='Back', command=lambda: admin_main_interface(user))
+    back_button.place(x=10, y=10)
+
+    # Left frame for data entry
+    left_frame = tk.Frame(window, bg='white', pady=10, padx=10)
+    left_frame.place(x=0, y=50, width=int(window.winfo_width() * 0.30), height=int(window.winfo_height() - 30))
+
+    right_frame = tk.Frame(window, bg='#F0E5F0')
+    right_frame.place(x=int(window.winfo_width() * 0.25), y=0, width=int(window.winfo_width() * 0.75),
+                      height=int(window.winfo_height()))
+    right_frame.columnconfigure(0, weight=1)
+    right_frame.columnconfigure(1, weight=1)
+    right_frame.grid_rowconfigure(1, weight=1)
+
+    global search_entry
+
+    search_entry = ttk.Entry(right_frame, width=30, style='edit.TEntry')
+    search_entry.grid(row=0, column=0, padx=10, pady=10, sticky='e')
+    # Create the search button
+    search_button = ttk.Button(right_frame, text="Search", style='actionBtn.TButton',command=lambda: search_students(staff_listbox,all_stud,'staff') )
+    search_button.grid(row=0, column=1, padx=10, pady=10, sticky='w')
+
+    # Labels for staff details entry
+    staff_labels = ["ID", "Name", "Contact", "Password", "Age", "Address",
+                    "Email", "Qualification", "Position", "Department", "Salary"]
+
+    # Entry fields for staff details
+    entry_fields = {}
+    for i, label in enumerate(staff_labels):
+        ttk.Label(left_frame, text=label, style='general.TLabel').grid(row=i, column=0, padx=10, pady=5)
+        entry_fields[label.lower()] = ttk.Entry(left_frame,style='edit.TEntry')
+        entry_fields[label.lower()].grid(row=i, column=1, padx=10, pady=5)
+
+    # Profile pic selection button
+    profile_pic_var = tk.StringVar()
+    profile_pic_label = ttk.Label(left_frame, text="Profile Picture", style='general.TLabel')
+    profile_pic_label.grid(row=len(staff_labels) + 1, column=0, padx=10, pady=5)
+    profile_pic_button = ttk.Button(left_frame, text="Select Profile Picture",
+                                    command=lambda: select_profile_pic(profile_pic_var), style='Btn.TButton')
+    profile_pic_button.grid(row=len(staff_labels) + 1, column=1, padx=10, pady=5)
+
+    add_button = ttk.Button(left_frame, text="ADD",
+                            command=lambda: save_staff_data(entry_fields, profile_pic_var, staff_listbox),
+                            style='activeBtn.TButton')
+    add_button.grid(row=len(staff_labels) + 2, column=0, padx=2, pady=2, sticky="we")
+
+    # Clear fields button
+    clear_btn = ttk.Button(left_frame, text="CLEAR",
+                           command=lambda: clear_fields(entry_fields, add_button, edit_button, delete_button,
+                                                        clear_btn),
+                           style='activeBtn.TButton')
+    clear_btn.grid(row=len(staff_labels) + 3, column=0, padx=2, pady=2, sticky="we")
+
+    edit_button = ttk.Button(left_frame, text="UPDATE", command=lambda: update_staff(entry_fields, staff_listbox),
+                             style='activeBtn.TButton')
+    edit_button.grid(row=len(staff_labels) + 3, column=1, padx=2, pady=2, sticky="we")
+
+    # Delete button
+    delete_button = ttk.Button(left_frame, text="DELETE",
+                               command=lambda: delete_staff_data(staff_listbox),
+                               style='activeBtn.TButton')
+    delete_button.grid(row=len(staff_labels) + 2, column=1, padx=2, pady=2, sticky="we")
+
+    add_button['state'] = 'enabled'
+    edit_button['state'] = 'disabled'
+    delete_button['state'] = 'disabled'
+    clear_btn['state'] = 'enabled'
+
+    # Staff listbox
+    staff_listbox = ttk.Treeview(right_frame, columns=staff_labels, show="headings",style="general.Treeview")
+    for col in staff_labels:
+        staff_listbox.heading(col, text=col, anchor=tk.CENTER)
+        staff_listbox.column(col, width=100)
+    staff_listbox.grid(row=1, columnspan=2,padx=10, pady=10, sticky='nsew')
+    for row in all_stud:
+        staff_listbox.insert("", "end", values=row)
+    staff_listbox.bind("<<TreeviewSelect>>", lambda event: propagate_selected_row(event,staff_listbox,staff_labels,entry_fields, add_button, edit_button, delete_button, clear_btn))
+
+def delete_staff_data(staff_treeview):
+    selected_item = staff_treeview.selection()
+    if selected_item:
+        # Retrieve the ID of the selected row
+        selected_id = staff_treeview.item(selected_item, 'values')[0]  # Assuming the ID is the first column
+
+        # Confirm deletion with the user
+        confirm = messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete this staff data?")
+        if confirm:
+            # Delete the selected data from the database
+            conn = db_connect()
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM staff WHERE id = %s", (selected_id,))
+                conn.commit()
+                conn.close()
+                messagebox.showinfo("Success", "Staff data deleted successfully.")
+                # Refresh the staff list after deletion
+                refresh_treetable(staff_treeview,'staff')
+    else:
+        messagebox.showwarning("No Selection", "Please select a staff data to delete.")
+
+def save_staff_data(entries, profile_pic_var, staff_treeview):
+    # Retrieve data from entry fields
+    # id = entries["id"].get()
+    name = entries["name"].get()
+    contact = entries["contact"].get()
+    password = entries["password"].get()
+    age = entries["age"].get()
+    address = entries["address"].get()
+    email = entries["email"].get()
+    qualification = entries["qualification"].get()
+    position = entries["position"].get()
+    department = entries["department"].get()
+    salary = entries["salary"].get()
+
+    # Retrieve selected profile pic
+    profile_pic = profile_pic_var.get()
+
+    # Insert staff data into the database
+    conn = db_connect()
+    if conn:
+        cursor = conn.cursor()
+        query = "INSERT INTO staff (name, contact, password, age, address, email, qualification, position, department, salary, profile_pic) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        cursor.execute(query, (
+            name, contact, password, age, address, email, qualification, position, department, salary,
+            profile_pic))
+        # Show confirmation message
+        confirm = messagebox.askyesno("Confirm Saved", "Are you sure you want to save this staff data?")
+        if confirm:
+            conn.commit()
+            messagebox.showinfo("Success", "Staff data saved successfully.")
+            # Refresh the staff list after saving
+            refresh_treetable(staff_treeview,'staff')
+            # Clear entry fields after saving
+            for entry in entries.values():
+                entry.delete(0, tk.END)
+
+def update_staff(entries, treeview):
+    # Get the updated data from entry fields
+    id = entries["id"].get()
+    name = entries["name"].get()
+    contact = entries["contact"].get()
+    password = entries["password"].get()
+    age = entries["age"].get()
+    address = entries["address"].get()
+    email = entries["email"].get()
+    qualification = entries["qualification"].get()
+    position = entries["position"].get()
+    department = entries["department"].get()
+    salary = entries["salary"].get()
+
+    conn = db_connect()
+    if conn:
+        cursor = conn.cursor()
+        try:
+            # Construct the SQL query to update the student details
+            query = """
+                    UPDATE staff 
+                    SET name = %s, contact = %s, password = %s, age = %s, address = %s,
+                        email = %s, qualification = %s, position = %s, department = %s, salary = %s
+                    WHERE id = %s;
+                    """
+            # Execute the query
+            cursor.execute(query, (name,contact,password,age,address,email,qualification,position,department,salary , id))
+            # Commit changes to the database
+            conn.commit()
+            messagebox.showinfo("Success", "Student data saved successfully.")
+
+            # Refresh the student listbox
+            refresh_treetable(treeview,'staff')
+        except pymysql.Error as e:
+            messagebox.showinfo("Error", "Staff data saved unsuccessfully.")
+            # Rollback changes in case of error
+            conn.rollback()
+        finally:
+            # Close cursor and connection
+            cursor.close()
+            conn.close()
+
+### Staff Data Ends here ###
+
+### Show Student Data ###
+
+def fetch_all_stud(table):
+    connection = pymysql.connect(host='localhost',user='root',password='',database='tintots_kindergarden')
+    cursor = connection.cursor()
+    try:
+        sql = f"SELECT * FROM {table} ;"
+        cursor.execute(sql)
+        all_stud = cursor.fetchall()
+        if all_stud:
+            for row in all_stud:
+                all_student_IdName[row[0]] = row[1]
+        else:
+            tk.messagebox.showerror("Error", "No Student Found!")
+        return all_stud  # Return the value of all_stud
+    except Exception as e:
+        tk.messagebox.showerror("Error", f"Database error: {str(e)}")
+
+def search_students(treetable,list,table):
+    search_text = search_entry.get()
+
+    if not search_text:
+        # If search text is empty, reset the tree to show all items
+        refresh_treetable(treetable,table)
+        return
+    else:
+        searching.clear()
+        for stud in list:
+            if search_text.isdigit():
+                if int(search_text) == stud[0]:
+                    searching.append(stud)
+            else:
+                if search_text.lower() in stud[1].lower():
+                    searching.append(stud)
+
+        if searching:
+            treetable.delete(*treetable.get_children())
+            for row in searching:
+                treetable.insert('', 'end', values=row)
+
+        else:
+            tk.messagebox.showinfo("No Student Found", "No matching for the search criteria was found.")
+
+def save_student_data(entry_fields, profile_pic_var, treetable):
+    # Extract student data from entry fields
+    name = entry_fields["name"].get()
+    age = entry_fields["age"].get()
+    contact = entry_fields["contact"].get()
+    address = entry_fields["address"].get()
+    enroll_date = entry_fields["enrollment_date"].get()
+    year = entry_fields["year"].get()
+
+    Profile_pic = profile_pic_var.get()
+    data = {label: entry_fields[label].get() for label in entry_fields}
+    data["Profile Pic"] = Profile_pic
+
+    conn = db_connect()
+    if conn:
+        cursor = conn.cursor()
+
+        try:
+            # Insert student data into the student table
+            student_query = "INSERT INTO student (name, age, contact, address, enroll_date, year, profile_pic) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+            cursor.execute(student_query, (name, age, contact, address, enroll_date, year, Profile_pic))
+            conn.commit()
+
+            # Get the auto-generated student ID
+            stud_id = cursor.lastrowid
+
+            # Insert subject records into the marks_record table based on the student's academic year
+            subject_query = "INSERT INTO marks_record (subject, stud_id, stud_name) VALUES (%s, %s, %s)"
+            subjects = []
+
+            if year == "1":
+                subjects = year1_subject
+            elif year == "2":
+                subjects = year2_subject
+            elif year == "3":
+                subjects = year3_subject
+
+            for subject in subjects:
+                cursor.execute(subject_query, (subject, stud_id, name))
+                conn.commit()
+
+            messagebox.showinfo("Success", "Student data saved successfully.")
+            refresh_treetable(treetable,'student')
+
+            for entry in entry_fields.values():
+                entry.delete(0, tk.END)
+
+        except Exception as e:
+            conn.rollback()
+            messagebox.showerror("Error", f"Failed to save student data: {str(e)}")
+
+        conn.close()
+
+def clear_fields(entry_fields, add_button, edit_button, delete_button, clear_btn):
+    # Clear all entry fields
+    for label in entry_fields:
+        entry_fields[label].delete(0, tk.END)
+    add_button['state'] = 'enabled'
+    edit_button['state'] = 'disabled'
+    delete_button['state'] = 'disabled'
+    clear_btn['state'] = 'enabled'
+
+#upload csv file
+def browse_file(student_treeview):
+    file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+    if file_path:
+        upload_student_list(file_path, student_treeview)
+
+# csv file
+def upload_student_list(file_path, treetable):
+    # Connect to the database
+    connection = pymysql.connect(host='localhost',user='root',password='',database='tintots_kindergarden')
+
+    try:
+        with connection.cursor() as cursor:
+            # Open the CSV file for reading
+            with open(file_path, 'r', newline='') as csvfile:
+                csv_reader = csv.DictReader(csvfile)
+                # Iterate over each row in the CSV file
+                for row in csv_reader:
+                    # Extract data from the CSV row
+                    name = row['name']
+                    age = int(row['age'])
+                    contact = row['contact']
+                    address = row['address']
+                    # Convert date to 'YYYY-MM-DD' format
+                    enroll_date = datetime.strptime(row['enroll_date'], '%m/%d/%Y').strftime('%Y-%m-%d')
+                    year = int(row['year'])
+                    emergency_contact = row['emergency_contact']
+
+                    # Insert the data into the database
+                    sql = "INSERT INTO student (name, age, contact, address, enroll_date, year, emergency_contact) VALUES (%s, %s, %s, %s, %s, %s)"
+                    cursor.execute(sql,
+                                   (name, age, contact, address, enroll_date, year))
+            # Commit the transaction
+            connection.commit()
+            messagebox.showinfo("Success", "Student data saved successfully.")
+            refresh_treetable(treetable,'student')
+    except Exception as e:
+        # Handle any errors
+        print(f"Upload failed: {e}")
+    finally:
+        # Close the database connection
+        connection.close()
+
+def delete_student_data(student_listbox,list):
+    # Placeholder for deleting student data from the database
+    selected_item = student_listbox.selection()  # Use 'selection' instead of 'curselection'
+    if selected_item:
+        selected_id = student_listbox.item(selected_item, "values")[0]  # Extract the ID from the selected item
+
+        confirm = messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete this student data?")
+        if confirm:
+            # Delete the selected data from the database
+            conn = db_connect()
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM student WHERE id = %s", (selected_id,))
+                conn.commit()
+                conn.close()
+                messagebox.showinfo("Success", "Student data deleted successfully.")
+                # Refresh the student list after deletion
+                refresh_treetable(student_listbox,'student')
+    else:
+        messagebox.showwarning("No Selection", "Please select a student data to delete.")
+
+def propagate_selected_row(event, treeview, labels, entry_fields, add_button, edit_button, delete_button, clear_btn):
+    # Get the selected item
+    selected_item = treeview.selection()
+    if selected_item:
+        # Get the values of the selected row
+        values = treeview.item(selected_item, "values")
+        # Update the entry fields with the selected row's values
+        for label, value in zip(labels, values):
+
+            entry_field = entry_fields[label.lower().replace(" ", "_")]
+            entry_field.delete(0, tk.END)
+            entry_field.insert(0, value)
+            if label == 'ID':
+                entry_field.config(state='disabled')
+
+        # Disable the ADD and CLEAR buttons, and enable the EDIT and DELETE buttons
+        add_button['state'] = 'disabled'
+        edit_button['state'] = 'enabled'
+        delete_button['state'] = 'enabled'
+        clear_btn['state'] = 'enabled'
+        # Disable the ID entry field
+
+def update_student(entry_fields, student_treeview):
+    # Get the updated data from entry fields
+    id = entry_fields["id"].get()
+    name = entry_fields["name"].get()
+    age = entry_fields["age"].get()
+    contact = entry_fields["contact"].get()
+    address = entry_fields["address"].get()
+    enroll_date = entry_fields["enrollment_date"].get()
+    year = entry_fields["year"].get()
+
+    conn = db_connect()
+    if conn:
+        cursor = conn.cursor()
+        try:
+            # Construct the SQL query to update the student details
+            query = """
+            UPDATE student
+            SET name = %s, age = %s, contact = %s, address = %s, enroll_date = %s,
+                year = %s
+            WHERE id = %s
+            """
+            # Execute the query
+            cursor.execute(query, (name, age, contact, address, enroll_date, year, id))
+            # Commit changes to the database
+            conn.commit()
+            messagebox.showinfo("Success", "Student data saved successfully.")
+
+            # Refresh the student listbox
+            refresh_treetable(student_treeview,'student')
+        except pymysql.Error as e:
+            messagebox.showinfo("Error", "Student data saved unsuccessfully.")
+            # Rollback changes in case of error
+            conn.rollback()
+        finally:
+            # Close cursor and connection
+            cursor.close()
+            conn.close()
+
+def show_student_data(user):
+    # Clear existing widgets from the parent frame
+    for widget in window.winfo_children():
+        widget.destroy()
+
+    all_stud = fetch_all_stud('student')
+
+    back_button=ttk.Button(window,style='activeBtn.TButton',text='Back',command=lambda: admin_main_interface(user))
+    back_button.place(x=10,y=10)
+
+    # Left frame for data entry
+    left_frame = tk.Frame(window,bg='white')
+    left_frame.place(x=0, y=50, width=int(window.winfo_width() * 0.30), height=int(window.winfo_height()-30))
+
+    right_frame = tk.Frame(window, bg='#F0E5F0')
+    right_frame.place(x=int(window.winfo_width() * 0.25), y=0, width=int(window.winfo_width() * 0.75), height=int(window.winfo_height()))
+    right_frame.columnconfigure(0, weight=1)
+    right_frame.columnconfigure(1, weight=1)
+    right_frame.grid_rowconfigure(1, weight=1)
+
+    global search_entry
+
+    search_entry = ttk.Entry(right_frame, width=30, style='edit.TEntry')
+    search_entry.grid(row=0, column=0, padx=10, pady=10, sticky='e')
+    # Create the search button
+    search_button = ttk.Button(right_frame, text="Search", style='actionBtn.TButton',command=lambda: search_students(student_treeview,all_stud,'student') )
+    search_button.grid(row=0, column=1, padx=10, pady=10, sticky='w')
+
+    # Entry fields labels
+    student_labels = ["ID", "Name", "Age", "Contact", "Address", "Enrollment Date", "Year"]
+
+    # Entry fields
+    entry_fields = {}
+    for i, label in enumerate(student_labels, start=1):
+        entry_lbl=ttk.Label(left_frame, text=label, style='general.TLabel')
+        entry_lbl.grid(row=i, column=0, padx=10, pady=10)
+
+        # Create entry field widgets for all labels except 'Year' and 'Enrollment Date'
+        if label != "Year" and label != "Enrollment Date":
+            entry_fields[label.lower().replace(" ", "_")] = ttk.Entry(left_frame,style='edit.TEntry')
+            entry_fields[label.lower().replace(" ", "_")].grid(row=i, column=1, padx=10, pady=5)
+        elif label == "Year":
+            # Create a dropdown menu for the 'Year' field
+            year_combobox = ttk.Combobox(left_frame, values=years, state="readonly")
+            year_combobox.grid(row=i, column=1, padx=10, pady=5)
+            entry_fields[label.lower().replace(" ", "_")] = year_combobox
+        else:  # label == "Enrollment Date"
+            # Create a DateEntry widget for selecting the date
+            enrollment_date_entry = DateEntry(left_frame, date_pattern="yyyy-mm-dd")
+            enrollment_date_entry.grid(row=i, column=1, padx=10, pady=5)
+            entry_fields[label.lower().replace(" ", "_")] = enrollment_date_entry
+
+    # Profile pic selection button
+    profile_pic_var = tk.StringVar()
+    profile_pic_label = ttk.Label(left_frame, text="Profile Picture", style='general.TLabel')
+    profile_pic_label.grid(row=len(student_labels)+1, column=0, padx=10, pady=5)
+    profile_pic_button = ttk.Button(left_frame, text="Select Profile Picture",
+                                    command=lambda: select_profile_pic(profile_pic_var), style='Btn.TButton')
+    profile_pic_button.grid(row=len(student_labels)+1, column=1, padx=10, pady=5)
+
+    add_button = ttk.Button(left_frame, text="ADD",
+                             command=lambda: save_student_data(entry_fields, profile_pic_var, student_treeview),
+                             style='activeBtn.TButton')
+    add_button.grid(row=len(student_labels) + 2, column=0,padx=2, pady=2, sticky="we")
+
+    # Clear fields button
+    clear_btn=ttk.Button(left_frame, text="CLEAR", command=lambda: clear_fields(entry_fields, add_button, edit_button, delete_button, clear_btn),
+               style='activeBtn.TButton')
+    clear_btn.grid(row=len(student_labels) + 3, column=0, padx=2, pady=2, sticky="we")
+
+    upload_button = ttk.Button(left_frame, text="Upload Student List", command=lambda: browse_file(student_treeview),
+                               style='actionBtn.TButton')
+    upload_button.grid(row=len(student_labels) + 4, columnspan=2, padx=2, pady=20, sticky="we")
+
+    edit_button = ttk.Button(left_frame, text="UPDATE", command=lambda: update_student(entry_fields,student_treeview),
+                             style='activeBtn.TButton')
+    edit_button.grid(row=len(student_labels) + 3, column=1, padx=2, pady=2, sticky="we")
+
+    # Delete button
+    delete_button = ttk.Button(left_frame, text="DELETE", command=lambda: delete_student_data(student_treeview,all_stud),
+                               style='activeBtn.TButton')
+    delete_button.grid(row=len(student_labels) + 2,column=1, padx=2, pady=2, sticky="we")
+
+    add_button['state'] = 'enabled'
+    edit_button['state'] = 'disabled'
+    delete_button['state'] = 'disabled'
+    clear_btn['state'] = 'enabled'
+
+    #Student Table
+    student_treeview = ttk.Treeview(right_frame, columns=student_labels, show="headings",style="general.Treeview")
+    student_treeview.grid(row=1, columnspan=2,padx=10, pady=10, sticky='nsew')
+    for label in student_labels:
+        student_treeview.heading(label, text=label, anchor=tk.CENTER)
+        student_treeview.column(label, width=100)
+    for row in all_stud:
+        student_treeview.insert("", "end", values=row)
+    student_treeview.bind("<<TreeviewSelect>>", lambda event: propagate_selected_row(event,student_treeview,student_labels,entry_fields, add_button, edit_button, delete_button, clear_btn))
+
+### Student Data ends here ####
 
 ### Class Slot ###
 def delete_selected_data(class_listbox):
@@ -524,348 +1074,22 @@ def subject_load_data(treeview):
             conn.close()
 ### Class Slot ends here ###
 
-
-### Show Student Data ###
-
-def fetch_all_stud():
-    connection = pymysql.connect(host='localhost',user='root',password='',database='tintots_kindergarden')
-    cursor = connection.cursor()
-    try:
-        sql = "SELECT * FROM student ;"
-        cursor.execute(sql)
-        all_stud = cursor.fetchall()
-        print(all_stud)
-        if all_stud:
-            for row in all_stud:
-                all_student_IdName[row[0]] = row[1]
-        else:
-            tk.messagebox.showerror("Error", "No Student Found!")
-        return all_stud  # Return the value of all_stud
-    except Exception as e:
-        tk.messagebox.showerror("Error", f"Database error: {str(e)}")
-
-def search_students(treetable,list):
-    search_text = search_entry.get()
-
-    if not search_text:
-        # If search text is empty, reset the tree to show all items
-        refresh_treetable(treetable)
-        return
-    else:
-        searching.clear()
-        for stud in list:
-            if search_text.isdigit():
-                if int(search_text) == stud[0]:
-                    searching.append(stud)
-            else:
-                if search_text.lower() in stud[1].lower():
-                    searching.append(stud)
-
-        if searching:
-            treetable.delete(*treetable.get_children())
-            for row in searching:
-                treetable.insert('', 'end', values=row)
-
-        else:
-            tk.messagebox.showinfo("No Student Found", "No student matching the search criteria was found.")
-
-def save_student_data(entry_fields, profile_pic_var, treetable):
-    # Extract student data from entry fields
-    name = entry_fields["name"].get()
-    age = entry_fields["age"].get()
-    contact = entry_fields["contact"].get()
-    address = entry_fields["address"].get()
-    enroll_date = entry_fields["enrollment_date"].get()
-    year = entry_fields["year"].get()
-
-    Profile_pic = profile_pic_var.get()
-    data = {label: entry_fields[label].get() for label in entry_fields}
-    data["Profile Pic"] = Profile_pic
-
-    conn = db_connect()
-    if conn:
-        cursor = conn.cursor()
-
-        try:
-            # Insert student data into the student table
-            student_query = "INSERT INTO student (name, age, contact, address, enroll_date, year, profile_pic) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-            cursor.execute(student_query, (name, age, contact, address, enroll_date, year, Profile_pic))
-            conn.commit()
-
-            # Get the auto-generated student ID
-            stud_id = cursor.lastrowid
-
-            # Insert subject records into the marks_record table based on the student's academic year
-            subject_query = "INSERT INTO marks_record (subject, stud_id, stud_name) VALUES (%s, %s, %s)"
-            subjects = []
-
-            if year == "1":
-                subjects = year1_subject
-            elif year == "2":
-                subjects = year2_subject
-            elif year == "3":
-                subjects = year3_subject
-
-            for subject in subjects:
-                cursor.execute(subject_query, (subject, stud_id, name))
-                conn.commit()
-
-            messagebox.showinfo("Success", "Student data saved successfully.")
-            refresh_treetable(treetable)
-
-            for entry in entry_fields.values():
-                entry.delete(0, tk.END)
-
-        except Exception as e:
-            conn.rollback()
-            messagebox.showerror("Error", f"Failed to save student data: {str(e)}")
-
-        conn.close()
-
-def clear_fields(entry_fields, add_button, edit_button, delete_button, clear_btn):
-    # Clear all entry fields
-    for label in entry_fields:
-        entry_fields[label].delete(0, tk.END)
-    add_button['state'] = 'enabled'
-    edit_button['state'] = 'disabled'
-    delete_button['state'] = 'disabled'
-    clear_btn['state'] = 'enabled'
-
-#upload csv file
-def browse_file(student_treeview):
-    file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
-    if file_path:
-        upload_student_list(file_path, student_treeview)
-
-# csv file
-def upload_student_list(file_path, treetable):
-    # Connect to the database
-    connection = pymysql.connect(host='localhost',user='root',password='',database='tintots_kindergarden')
-
-    try:
-        with connection.cursor() as cursor:
-            # Open the CSV file for reading
-            with open(file_path, 'r', newline='') as csvfile:
-                csv_reader = csv.DictReader(csvfile)
-                # Iterate over each row in the CSV file
-                for row in csv_reader:
-                    # Extract data from the CSV row
-                    name = row['name']
-                    age = int(row['age'])
-                    contact = row['contact']
-                    address = row['address']
-                    # Convert date to 'YYYY-MM-DD' format
-                    enroll_date = datetime.strptime(row['enroll_date'], '%m/%d/%Y').strftime('%Y-%m-%d')
-                    year = int(row['year'])
-                    emergency_contact = row['emergency_contact']
-
-                    # Insert the data into the database
-                    sql = "INSERT INTO student (name, age, contact, address, enroll_date, year, emergency_contact) VALUES (%s, %s, %s, %s, %s, %s)"
-                    cursor.execute(sql,
-                                   (name, age, contact, address, enroll_date, year))
-            # Commit the transaction
-            connection.commit()
-            messagebox.showinfo("Success", "Student data saved successfully.")
-            refresh_treetable(treetable)
-    except Exception as e:
-        # Handle any errors
-        print(f"Upload failed: {e}")
-    finally:
-        # Close the database connection
-        connection.close()
-
-def delete_student_data(student_listbox,list):
-    # Placeholder for deleting student data from the database
-    selected_item = student_listbox.selection()  # Use 'selection' instead of 'curselection'
-    if selected_item:
-        selected_id = student_listbox.item(selected_item, "values")[0]  # Extract the ID from the selected item
-
-        confirm = messagebox.askyesno("Confirm Deletion", "Are you sure you want to delete this student data?")
-        if confirm:
-            # Delete the selected data from the database
-            conn = db_connect()
-            if conn:
-                cursor = conn.cursor()
-                cursor.execute("DELETE FROM student WHERE id = %s", (selected_id,))
-                conn.commit()
-                conn.close()
-                messagebox.showinfo("Success", "Student data deleted successfully.")
-                # Refresh the student list after deletion
-                refresh_treetable(student_listbox)
-    else:
-        messagebox.showwarning("No Selection", "Please select a student data to delete.")
-
-def propagate_selected_row(event, treeview, labels, entry_fields, add_button, edit_button, delete_button, clear_btn):
-    # Get the selected item
-    selected_item = treeview.selection()
-    if selected_item:
-        # Get the values of the selected row
-        values = treeview.item(selected_item, "values")
-        # Update the entry fields with the selected row's values
-        for label, value in zip(labels, values):
-
-            entry_field = entry_fields[label.lower().replace(" ", "_")]
-            entry_field.delete(0, tk.END)
-            entry_field.insert(0, value)
-            if label == 'ID':
-                entry_field.config(state='disabled')
-
-        # Disable the ADD and CLEAR buttons, and enable the EDIT and DELETE buttons
-        add_button['state'] = 'disabled'
-        edit_button['state'] = 'enabled'
-        delete_button['state'] = 'enabled'
-        clear_btn['state'] = 'enabled'
-        # Disable the ID entry field
-
-def update_student(entry_fields, student_treeview):
-    # Get the updated data from entry fields
-    id = entry_fields["id"].get()
-    name = entry_fields["name"].get()
-    age = entry_fields["age"].get()
-    contact = entry_fields["contact"].get()
-    address = entry_fields["address"].get()
-    enroll_date = entry_fields["enrollment_date"].get()
-    year = entry_fields["year"].get()
-
-    conn = db_connect()
-    if conn:
-        cursor = conn.cursor()
-        try:
-            # Construct the SQL query to update the student details
-            query = """
-            UPDATE student
-            SET name = %s, age = %s, contact = %s, address = %s, enroll_date = %s,
-                year = %s
-            WHERE id = %s
-            """
-            # Execute the query
-            cursor.execute(query, (name, age, contact, address, enroll_date, year, id))
-            # Commit changes to the database
-            conn.commit()
-            messagebox.showinfo("Success", "Student data saved successfully.")
-
-            # Refresh the student listbox
-            refresh_treetable(student_treeview)
-        except pymysql.Error as e:
-            messagebox.showinfo("Error", "Student data saved unsuccessfully.")
-            # Rollback changes in case of error
-            conn.rollback()
-        finally:
-            # Close cursor and connection
-            cursor.close()
-            conn.close()
-
-def show_student_data(user):
-    # Clear existing widgets from the parent frame
-    for widget in window.winfo_children():
-        widget.destroy()
-
-    all_stud = fetch_all_stud()
-
-    back_button=ttk.Button(window,style='activeBtn.TButton',text='Back',command=lambda: admin_main_interface(user))
-    back_button.place(x=10,y=10)
-
-    # Left frame for data entry
-    left_frame = tk.Frame(window,bg='white')
-    left_frame.place(x=0, y=50, width=int(window.winfo_width() * 0.30), height=int(window.winfo_height()-30))
-
-    right_frame = tk.Frame(window, bg='#F0E5F0')
-    right_frame.place(x=int(window.winfo_width() * 0.25), y=0, width=int(window.winfo_width() * 0.75), height=int(window.winfo_height()))
-    right_frame.columnconfigure(0, weight=1)
-    right_frame.columnconfigure(1, weight=1)
-    right_frame.grid_rowconfigure(1, weight=1)
-
-    global search_entry
-
-    search_entry = ttk.Entry(right_frame, width=30, style='edit.TEntry')
-    search_entry.grid(row=0, column=0, padx=10, pady=10, sticky='e')
-    # Create the search button
-    search_button = ttk.Button(right_frame, text="Search", style='actionBtn.TButton',command=lambda: search_students(student_treeview,all_stud) )
-    search_button.grid(row=0, column=1, padx=10, pady=10, sticky='w')
-
-    # Entry fields labels
-    student_labels = ["ID", "Name", "Age", "Contact", "Address", "Enrollment Date", "Year"]
-
-    # Entry fields
-    entry_fields = {}
-    for i, label in enumerate(student_labels, start=1):
-        entry_lbl=ttk.Label(left_frame, text=label, style='general.TLabel')
-        entry_lbl.grid(row=i, column=0, padx=10, pady=10)
-
-        # Create entry field widgets for all labels except 'Year' and 'Enrollment Date'
-        if label != "Year" and label != "Enrollment Date":
-            entry_fields[label.lower().replace(" ", "_")] = ttk.Entry(left_frame,style='edit.TEntry')
-            entry_fields[label.lower().replace(" ", "_")].grid(row=i, column=1, padx=10, pady=5)
-        elif label == "Year":
-            # Create a dropdown menu for the 'Year' field
-            year_combobox = ttk.Combobox(left_frame, values=years, state="readonly")
-            year_combobox.grid(row=i, column=1, padx=10, pady=5)
-            entry_fields[label.lower().replace(" ", "_")] = year_combobox
-        else:  # label == "Enrollment Date"
-            # Create a DateEntry widget for selecting the date
-            enrollment_date_entry = DateEntry(left_frame, date_pattern="yyyy-mm-dd")
-            enrollment_date_entry.grid(row=i, column=1, padx=10, pady=5)
-            entry_fields[label.lower().replace(" ", "_")] = enrollment_date_entry
-
-    # Profile pic selection button
-    profile_pic_var = tk.StringVar()
-    profile_pic_label = ttk.Label(left_frame, text="Profile Picture", style='general.TLabel')
-    profile_pic_label.grid(row=len(student_labels)+1, column=0, padx=10, pady=5)
-    profile_pic_button = ttk.Button(left_frame, text="Select Profile Picture",
-                                    command=lambda: select_profile_pic(profile_pic_var), style='Btn.TButton')
-    profile_pic_button.grid(row=len(student_labels)+1, column=1, padx=10, pady=5)
-
-    add_button = ttk.Button(left_frame, text="ADD",
-                             command=lambda: save_student_data(entry_fields, profile_pic_var, student_treeview),
-                             style='activeBtn.TButton')
-    add_button.grid(row=len(student_labels) + 2, column=0,padx=2, pady=2, sticky="we")
-
-    # Clear fields button
-    clear_btn=ttk.Button(left_frame, text="CLEAR", command=lambda: clear_fields(entry_fields, add_button, edit_button, delete_button, clear_btn),
-               style='activeBtn.TButton')
-    clear_btn.grid(row=len(student_labels) + 3, column=0, padx=2, pady=2, sticky="we")
-
-    upload_button = ttk.Button(left_frame, text="Upload Student List", command=lambda: browse_file(student_treeview),
-                               style='actionBtn.TButton')
-    upload_button.grid(row=len(student_labels) + 4, columnspan=2, padx=2, pady=20, sticky="we")
-
-    # update_image_button = ttk.Button(right_frame, text="Update Image", command=upload_image_popup,
-    #                                  style='Btn.TButton')
-    # update_image_button.pack(side=tk.BOTTOM, padx=5, pady=5, fill=tk.X)
-
-    edit_button = ttk.Button(left_frame, text="UPDATE", command=lambda: update_student(entry_fields,student_treeview),
-                             style='activeBtn.TButton')
-    edit_button.grid(row=len(student_labels) + 3, column=1, padx=2, pady=2, sticky="we")
-
-    # Delete button
-    delete_button = ttk.Button(left_frame, text="DELETE", command=lambda: delete_student_data(student_treeview,all_stud),
-                               style='activeBtn.TButton')
-    delete_button.grid(row=len(student_labels) + 2,column=1, padx=2, pady=2, sticky="we")
-
-    add_button['state'] = 'enabled'
-    edit_button['state'] = 'disabled'
-    delete_button['state'] = 'disabled'
-    clear_btn['state'] = 'enabled'
-
-    #Student Table
-    student_treeview = ttk.Treeview(right_frame, columns=student_labels, show="headings",style="general.Treeview")
-    student_treeview.grid(row=1, columnspan=2,padx=10, pady=10, sticky='nsew')
-    for label in student_labels:
-        student_treeview.heading(label, text=label, anchor=tk.CENTER)
-        student_treeview.column(label, width=100)
-    for row in all_stud:
-        student_treeview.insert("", "end", values=row)
-    student_treeview.bind("<<TreeviewSelect>>", lambda event: propagate_selected_row(event,student_treeview,student_labels,entry_fields, add_button, edit_button, delete_button, clear_btn))
-
-### Student Data ends here ####
-
-
 window = tk.Tk()
 screen_width = window.winfo_screenwidth() * 0.99
 screen_height = window.winfo_screenheight()* 0.99
 window.geometry(f"{int(screen_width)}x{int(screen_height)}+0+0")
 window.title("Tintots Kindergarden")
 window.configure(bg="#f0e5f0")
+
+# Load the image
+image_path = "tintots_background.png"  # Change this to the path of your image
+image = Image.open(image_path)
+image = image.resize((int(screen_width), int(screen_height)), Image.LANCZOS)
+background_image = ImageTk.PhotoImage(image)
+
+# Create a Label widget to display the image
+background_label = tk.Label(window, image=background_image)
+background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
 def login():
     global user_info, stud_info, all_student_IdName, all_stud, profile_ctrlRow, searching,add_button,edit_button,delete_button,clear_btn
@@ -898,12 +1122,12 @@ def login():
     password_entry.grid(row=2, column=1, padx=10, pady=10)
 
     # Admin login button
-    admin_button = ttk.Button(login_frame, text="Admin Login", style="activeBtn.TButton", command=lambda: admin_authenticate(login_frame,username_entry, password_entry))
-    admin_button.grid(row=3, columnspan=2)
+    admin_button = ttk.Button(login_frame, text="Admin Login", style="activeBtn.TButton",width=20, command=lambda: admin_authenticate(login_frame,username_entry, password_entry))
+    admin_button.grid(row=3, columnspan=2,pady=10)
 
     # Teacher login button
-    staff_button = ttk.Button(login_frame, text="Teacher Login",  style="activeBtn.TButton")
-    staff_button.grid(row=4, columnspan=2)
+    staff_button = ttk.Button(login_frame, text="Teacher Login",  style="activeBtn.TButton",width=20,command=lambda: teacher_authenticate(login_frame,username_entry, password_entry))
+    staff_button.grid(row=4, columnspan=2,pady=10)
 
     # Forgot pswd button
     fpswd_button = ttk.Button(login_frame, text="Forgot Password",  style="actionBtn.TButton")
