@@ -14,7 +14,7 @@ year1_subject=['Bahasa Melayu','English']
 year2_subject=['Art','Science','Mathematics']
 year3_subject=['Living Skills','Music','Physical Education']
 record_action = ['--', 'Midterm', 'Final Exam']
-
+row_count=0
 ### General Functions ####
 def db_connect():
     try:
@@ -45,9 +45,11 @@ def display_userPic(frame, width, height, user, table):
     finally:
         # Close the connection
         connection.close()
-
     if image_path:
         load_profilePic(frame, width, height, image_path)
+    else:
+        # If image_path is None, you can choose to do nothing or display a default image
+        pass  # or display_default_image(frame, width, height)
 
 
 def load_profilePic(frame, width, height, image_path):
@@ -174,11 +176,11 @@ def display_user_data(frame):
                                          pady=5, sticky="w")
             else:
                 ttk.Label(frame, text=field.capitalize() + ":", style='edit.TLabel',
-                          background='white').grid(row=profile_ctrlRow - 6, column=3,
+                          background='white').grid(row=profile_ctrlRow - 5, column=3,
                                                    padx=10,
                                                    pady=5, sticky="w")
                 ttk.Label(frame, text=value, style='edit.TLabel', font=('normal',12), background='white').grid(
-                    row=profile_ctrlRow - 6, column=4, padx=10,
+                    row=profile_ctrlRow - 5, column=4, padx=10,
                     pady=5, sticky="w")
         profile_ctrlRow+=1
 
@@ -211,8 +213,8 @@ def teacher_authenticate(login_frame,username_entry, password_entry):
     username = username_entry.get()
     password = password_entry.get()
 
-    if not (8 <= len(username) <= 10) or not username.isdigit():
-        messagebox.showerror("Staff Login", "Invalid user ID, you may not an admin try to login as a staff")
+    if not len(username) == 10 or not username.isdigit():
+        messagebox.showerror("Staff Login", "Invalid user ID. Please enter an 10-digit ID number.")
         return
 
     conn=db_connect()
@@ -248,7 +250,7 @@ def admin_authenticate(loginframe,admin_username_entry, admin_password_entry):
 
     # Check if ID is an 8-digit integer
     if len(username) != 8 or not username.isdigit():
-        messagebox.showerror("Admin Login", "Invalid user ID. Please enter an 8-digit ID number.")
+        messagebox.showerror("Admin Login", "Invalid user ID, you may not an admin try to login as a staff.")
         return
 
     # Authenticate using database
@@ -325,11 +327,6 @@ def refresh_treetable(treetable,table):
 
 ### Teacher Dashboard ###
 
-# def on_window_configure(event):
-#     global action_frame
-#     for frame in action_frame:
-#         frame.place(x=0, y=window.winfo_height() * 0.1, width=window.winfo_width(),
-#                     height=window.winfo_height() * 0.9)
 def grade(marks):
     if marks >= 90:
         return 'A+'
@@ -415,12 +412,13 @@ def display_performance_report(student_id,btn):
     report_window.title("Performance Report")
     report_window.geometry(f"+300+80")
 
-    fetch_user(student_id, 'student')
+    stud_info=fetch_user(student_id, 'student')
     row = 1
     for field, value in stud_info.items():
         value = str(value)
         if field == 'profile_pic':
             load_profilePic(report_window, 80, 80, value)
+            pass
         elif field == 'annual_review' or field == 'subject' or field == 'year':
             pass
         else:
@@ -458,12 +456,7 @@ def display_performance_report(student_id,btn):
     i = 1
     counter = 3
     atten_count = []
-    connection = pymysql.connect(
-        host='localhost',
-        user='root',
-        password='',
-        database='tintots_kindergarden'
-    )
+    connection = db_connect()
     cursor = connection.cursor()
     try:
         sql = "SELECT * FROM marks_record WHERE stud_id = %s;"
@@ -546,8 +539,8 @@ def display_performance_report(student_id,btn):
     download_button = ttk.Button(report_window, text="Download", style='actionBtn.TButton', command=download_report)
     download_button.grid(row=row + 1, column=5, padx=20, sticky='e')
 
-def profile_clicked(user,button):
-    set_active_button(button)
+def profile_clicked(user):
+    set_active_button(profile_button)
     ### FRAME 1
     Frame_profile = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
     Frame_profile.place(x=0, y=window.winfo_height() * 0.1, width=window.winfo_width(),
@@ -584,33 +577,45 @@ def profile_clicked(user,button):
     content_text.insert("1.0", user_info['qualification'])
     content_text.config(state="disabled")
 
-def attendance_clicked(user,button):
-    set_active_button(button)
+def attendance_clicked(user):
+    set_active_button(attendance_button)
     # FRAME 2
     Frame_attendance = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
+    Frame_attendance.place(x=0, y=window.winfo_height() * 0.1, width=window.winfo_width(),
+                     height=window.winfo_height() * 0.9)
     action_frame.append(Frame_attendance)
     Frame_attendance.columnconfigure(1, weight=1)
-    teach_subject(user, Frame_attendance, attendance_frame=Frame_attendance)
+    Frame_attendance.tkraise()
+    user_id=user[0]
+    teach_subject(user_id, Frame_attendance, attendance_frame=Frame_attendance)
 
-def assessment_clicked(user,button):
-    set_active_button(button)
+def assessment_clicked(user):
+    set_active_button(assessment_button)
     # FRAME 3
     Frame_assessment = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
+    Frame_assessment.place(x=0, y=window.winfo_height() * 0.1, width=window.winfo_width(),
+                     height=window.winfo_height() * 0.9)
     action_frame.append(Frame_assessment)
+    Frame_assessment.tkraise()
+    user_id=user[0]
+    teach_subject(user_id, Frame_assessment, assessment_frame=Frame_assessment)
 
-    teach_subject(user, Frame_assessment, assessment_frame=Frame_assessment)
-
-def report_clicked(user,button):
-    set_active_button(button)
-
+def report_clicked(user):
+    set_active_button(report_button)
+    global search_entry
     # FRAME 4 -Report, only available to form teacher
     Frame_report = tk.Frame(window, bd=5, relief=tk.FLAT, bg="white")
+    Frame_report.place(x=0, y=window.winfo_height() * 0.1, width=window.winfo_width(),
+                     height=window.winfo_height() * 0.9)
     action_frame.append(Frame_report)
     Frame_report.columnconfigure(1, weight=1)
-
+    Frame_report.tkraise()
     search_entry = ttk.Entry(Frame_report, width=30, style='edit.TEntry')
     search_entry.grid(row=0, column=3, padx=10, pady=10, sticky='e')
 
+    # Create the search button
+    search_button = ttk.Button(Frame_report, text="Search", style='actionBtn.TButton', command=lambda :search_students(student_tree,all_stud,'student'))
+    search_button.grid(row=0, column=4, padx=10, pady=10, sticky='w')
     # Table to display student information
     columns = ("No.", "Student ID", "Student Name")
     student_tree = ttk.Treeview(Frame_report, columns=columns, show="headings", style="general.Treeview")
@@ -624,7 +629,12 @@ def report_clicked(user,button):
     view_button = ttk.Button(Frame_report, text="View", command=lambda :view_performance_report(student_tree,view_button), style='activeBtn.TButton', )
     view_button.grid(row=2, column=3, padx=10, pady=10, sticky='e')
 
-    refresh_treetable(student_tree,'student')
+    populate_student_table(student_tree)
+
+def populate_student_table(student_tree):
+    fetch_all_stud('student')
+    for i, (student_id, student_name) in enumerate(all_student_IdName.items(), start=1):
+        student_tree.insert("", "end", values=(str(i), str(student_id), student_name))
 
 def view_performance_report(treeview,btn):
     selected_item = treeview.selection()
@@ -651,8 +661,7 @@ def teach_subject(user, frame, assessment_frame=None, attendance_frame=None):
                 tk.messagebox.showerror("Error", "User not found in the database")
                 return
 
-        class_lbl = ttk.Label(frame, text='Class : ', style='edit.TLabel', background='white', padding=(40, 40))
-        class_lbl.grid(row=0, column=0, sticky="e")
+
         class_sel = ttk.Combobox(frame, values=subjects, font=(font, '12'))
         class_sel.grid(row=0, column=1, sticky="w", padx=20, pady=20)
 
@@ -660,13 +669,14 @@ def teach_subject(user, frame, assessment_frame=None, attendance_frame=None):
         bind_combobox_selection_event(class_sel, frame)
 
         if frame == assessment_frame:
-            class_lbl = ttk.Label(frame, text='Subject : ', style='edit.TLabel', background='white',
-                                  padding=(40, 40))
-            class_lbl.grid(row=0, column=0, sticky="e")
+            subject_lbl = ttk.Label(frame, text='Subject : ', style='edit.TLabel', background='white', padding=(40, 40))
+            subject_lbl.grid(row=0, column=0, sticky="e")
             class_sel.bind('<<ComboboxSelected>>', lambda event: record_marks(class_sel.get(), frame))
-            destroy_all_widgets(frame, None)
+            destroy_all_widgets(frame, subject_lbl)
             return
         elif frame == attendance_frame:
+            class_lbl = ttk.Label(frame, text='Class : ', style='edit.TLabel', background='white', padding=(40, 40))
+            class_lbl.grid(row=0, column=0, sticky="e")
             class_sel.bind('<<ComboboxSelected>>', lambda event: fetch_time_slot(class_sel.get(), frame))
 
     except Exception as e:
@@ -805,7 +815,7 @@ def fetch_students(selected_subject, frame):
     submit_button.grid(row=row_count + 3, columnspan=5, pady='20', padx='20', sticky="e")
     connection.close()
 
-def submit_attendance(attendance_data, subj_student, selected_subject, submit_btn,frame):
+def submit_attendance(attendance_data, subj_student, selected_subject, submit_btn, frame):
     connection = db_connect()
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     try:
@@ -817,13 +827,13 @@ def submit_attendance(attendance_data, subj_student, selected_subject, submit_bt
                 cursor.execute(sql, (selected_subject, student_id, student_name, current_time, attendance))
             connection.commit()
             messagebox.showinfo("Success", "Attendance recorded successfully!")
-            frame.destroy()
-
     except Exception as e:
         messagebox.showerror("Error", f"Database error: {str(e)}")
+    finally:
+        destroy_all_widgets(frame, class_lbl)
 
 def show_teacher_dashboard(user):
-    global action_frame, action_btn,user_info
+    global action_frame, action_btn,user_info,profile_button,attendance_button,assessment_button,report_button
     # Clear existing widgets from the parent frame
     for widget in window.winfo_children():
         widget.destroy()
@@ -836,24 +846,24 @@ def show_teacher_dashboard(user):
     Frame_buttonNav = tk.Frame(window, bd=5, relief=tk.FLAT, bg="#F0E5F0")
     Frame_buttonNav.place(x=0, y=0, width=window.winfo_width(), height=window.winfo_height() * 0.1)
 
-    profile_button = ttk.Button(Frame_buttonNav, text="Profile", command=lambda: profile_clicked(user,profile_button), style='inactiveBtn.TButton',
+    profile_button = ttk.Button(Frame_buttonNav, text="Profile", command=lambda: profile_clicked(user), style='inactiveBtn.TButton',
                                 width=15)
     profile_button.grid(row=0, column=0, padx=5)
     action_btn.append(profile_button)
 
-    attendance_button = ttk.Button(Frame_buttonNav, text="Attendance", command=lambda :attendance_clicked(user,attendance_button),
+    attendance_button = ttk.Button(Frame_buttonNav, text="Attendance", command=lambda :attendance_clicked(user),
                                    style='inactiveBtn.TButton', width=15)
     attendance_button.grid(row=0, column=1, padx=5)
     action_btn.append(attendance_button)
 
-    assessment_button = ttk.Button(Frame_buttonNav, text="Assessment", command=lambda:assessment_clicked(user,assessment_button),
+    assessment_button = ttk.Button(Frame_buttonNav, text="Assessment", command=lambda:assessment_clicked(user),
                                    style='inactiveBtn.TButton', width=15)
     assessment_button.grid(row=0, column=2, padx=5)
     action_btn.append(assessment_button)
 
-    report_button = ttk.Button(Frame_buttonNav, text="Report", command=lambda: report_clicked(user,report_button), style='inactiveBtn.TButton',
+    report_button = ttk.Button(Frame_buttonNav, text="Report", command=lambda: report_clicked(user), style='inactiveBtn.TButton',
                                width=15)
-    report_button.grid(row=0, column=4, padx=5)
+    report_button.grid(row=0, column=3, padx=5)
     action_btn.append(report_button)
     # position = get_staff_position(user)
 
@@ -865,14 +875,14 @@ def show_teacher_dashboard(user):
     exit_icon = Image.open("logout.png")
     exit_icon = exit_icon.resize((25, 25), Image.LANCZOS)
     exit_icon = ImageTk.PhotoImage(exit_icon)
-    exit_button = ttk.Button(Frame_buttonNav, image=exit_icon, text="Exit", command=logout(),
+    exit_button = ttk.Button(Frame_buttonNav, image=exit_icon, text="Exit", command=lambda :logout(),
                              style='activeBtn.TButton')
     exit_button.grid(row=0, column=5, sticky="e")
     # Configure column weights to distribute space evenly
     Frame_buttonNav.grid_columnconfigure((0, 1, 2, 3), weight=1)
     Frame_buttonNav.grid_columnconfigure(4, weight=2)
 
-    # profile_clicked(user,profile_button)
+    profile_clicked(user)
 
 ### Teacher DashBoard ends here ###
 
@@ -1067,6 +1077,7 @@ def update_staff(entries, treeview):
 ### Show Student Data ###
 
 def fetch_all_stud(table):
+    global all_student_IdName
     connection = pymysql.connect(host='localhost',user='root',password='',database='tintots_kindergarden')
     cursor = connection.cursor()
     try:
@@ -1076,6 +1087,7 @@ def fetch_all_stud(table):
         if all_stud:
             for row in all_stud:
                 all_student_IdName[row[0]] = row[1]
+
         else:
             tk.messagebox.showerror("Error", "No Student Found!")
         return all_stud  # Return the value of all_stud
@@ -1178,7 +1190,7 @@ def browse_file(student_treeview):
 # csv file
 def upload_student_list(file_path, treetable):
     # Connect to the database
-    connection = pymysql.connect(host='localhost',user='root',password='',database='tintots_kindergarden')
+    connection = pymysql.connect(host='localhost', user='root', password='', database='tintots_kindergarden')
 
     try:
         with connection.cursor() as cursor:
@@ -1195,19 +1207,36 @@ def upload_student_list(file_path, treetable):
                     # Convert date to 'YYYY-MM-DD' format
                     enroll_date = datetime.strptime(row['enroll_date'], '%m/%d/%Y').strftime('%Y-%m-%d')
                     year = int(row['year'])
-                    emergency_contact = row['emergency_contact']
+                    profile_pic=row['profile_pic']
 
                     # Insert the data into the database
-                    sql = "INSERT INTO student (name, age, contact, address, enroll_date, year, emergency_contact) VALUES (%s, %s, %s, %s, %s, %s)"
-                    cursor.execute(sql,
-                                   (name, age, contact, address, enroll_date, year))
+                    sql = "INSERT INTO student (name, age, contact, address, enroll_date, year,profile_pic) VALUES (%s, %s, %s, %s, %s, %s,%s)"
+                    cursor.execute(sql, (name, age, contact, address, enroll_date, year,profile_pic))
+
+                    # Get the auto-generated student ID
+                    stud_id = cursor.lastrowid
+
+                    # Insert subject records into the marks_record table based on the student's academic year
+                    subject_query = "INSERT INTO marks_record (subject, stud_id, stud_name) VALUES (%s, %s, %s)"
+                    subjects = []
+
+                    if year == 1:
+                        subjects = year1_subject
+                    elif year == 2:
+                        subjects = year2_subject
+                    elif year == 3:
+                        subjects = year3_subject
+
+                    for subject in subjects:
+                        cursor.execute(subject_query, (subject, stud_id, name))
+
             # Commit the transaction
             connection.commit()
             messagebox.showinfo("Success", "Student data saved successfully.")
-            refresh_treetable(treetable,'student')
+            refresh_treetable(treetable, 'student')
     except Exception as e:
         # Handle any errors
-        print(f"Upload failed: {e}")
+        messagebox.showerror("Error", f"Upload failed: {e}")
     finally:
         # Close the database connection
         connection.close()
@@ -1547,7 +1576,7 @@ def show_class_slot(user):
     if conn:  # Assuming you have a database connection object named 'conn'
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT name FROM staff WHERE department = 'Academic'")
+            cursor.execute("SELECT id FROM staff WHERE department = 'Academic'")
             academic_staff = [row[0] for row in cursor.fetchall()]
         except Exception as e:
             print("Error fetching academic staff:", e)
@@ -1633,13 +1662,13 @@ window = tk.Tk()
 screen_width = window.winfo_screenwidth() * 0.99
 screen_height = window.winfo_screenheight()* 0.99
 window.geometry(f"{int(screen_width)}x{int(screen_height)}+0+0")
-window.title("Tintots Kindergarden")
+window.title("Tintots Kindergarten")
 window.configure(bg="#f0e5f0")
 
 
 def login():
     global user_info, stud_info, all_student_IdName, all_stud, profile_ctrlRow, searching,add_button,edit_button,delete_button,clear_btn
-    global action_teacher_btn,action_teacher_frame
+    global action_btn,action_frame
     user_info = {}
     stud_info = {}
     all_student_IdName = {}
@@ -1651,14 +1680,14 @@ def login():
     delete_button=None
     clear_btn=None
 
-    action_teacher_btn = []
-    action_teacher_frame = []
+    action_btn = []
+    action_frame = []
 
     login_frame = tk.Frame(window, background="white",padx=30,pady=30)
     login_frame.pack(expand=True)
     login_frame.columnconfigure(1, weight=1)
 
-    title_lbl = ttk.Label(login_frame, text="Tintots Kindergarden", font=(font,20),style='heading.TLabel')
+    title_lbl = ttk.Label(login_frame, text="Tintots Kindergarten", font=(font,20),style='heading.TLabel')
     title_lbl.grid(row=0, columnspan=2, padx=50, pady=50)
 
     # Create username and password labels and entry widgets
